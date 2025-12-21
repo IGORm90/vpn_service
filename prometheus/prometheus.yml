@@ -1,0 +1,55 @@
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+  external_labels:
+    cluster: 'vpn-service'
+    replica: '0'
+
+# Alertmanager configuration
+alerting:
+  alertmanagers:
+    - static_configs:
+        - targets: []
+          # - alertmanager:9093
+
+# Load rules once and periodically evaluate them
+rule_files:
+  # - "alerts.yml"
+  # - "rules.yml"
+
+# Scrape configurations
+scrape_configs:
+  # Prometheus self-monitoring
+  - job_name: 'prometheus'
+    static_configs:
+      - targets: ['localhost:9090']
+        labels:
+          service: 'prometheus'
+
+  # VPN Go Application metrics
+  - job_name: 'vpn-go-app'
+    scrape_interval: 10s
+    static_configs:
+      - targets: ['go-app:8080']
+        labels:
+          service: 'vpn-service'
+          component: 'api'
+
+  # Xray VPN metrics (if exposed)
+  - job_name: 'xray'
+    scrape_interval: 15s
+    static_configs:
+      - targets: ['xray:10085']
+        labels:
+          service: 'xray'
+          component: 'proxy'
+    # metrics_path: '/stats'
+
+  # Grafana metrics (optional)
+  - job_name: 'grafana'
+    static_configs:
+      - targets: ['grafana:3000']
+        labels:
+          service: 'grafana'
+          component: 'dashboard'
+
