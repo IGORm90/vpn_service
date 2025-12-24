@@ -1,26 +1,63 @@
-# VPN Service with Xray, Go, Prometheus & Grafana
+# VPN Service with VLESS Protocol
 
-A complete VPN service infrastructure with user management, metrics collection, and monitoring.
+A complete VPN service infrastructure with embedded Xray-core, user management, traffic monitoring, and metrics collection.
+
+> **🇷🇺 Русская версия:** [README.ru.md](README.ru.md)
+
+## 🏗️ Architecture
+
+- **Go Application** - Embedded Xray-core, REST API, User Management
+- **SQLite** - User database
+- **Prometheus** - Metrics collection
+- **Grafana** - Metrics visualization
+- **VLESS + Reality + xHTTP** - Modern secure VPN protocol
+
+## ✨ Features
+
+- ✅ REST API for user management
+- ✅ Traffic limits and subscription expiry
+- ✅ Automatic traffic tracking
+- ✅ Client config generation (JSON, URI, QR code)
+- ✅ Real-time monitoring (Prometheus + Grafana)
+- ✅ VLESS protocol with Reality and xHTTP
+- ✅ SQLite database for user storage
 
 ## 📁 Project Structure
 
 ```
-project/
-├── docker-compose.yml      # Orchestrates all services
+vpn-service/
 ├── go-app/
-│   ├── Dockerfile         # Go service container
-│   ├── main.go           # User management & metrics service
-│   └── go.mod            # Go dependencies
-├── xray/
-│   └── config.json       # VLESS+xHTTP configuration
+│   ├── main.go              # Entry point
+│   ├── database/            # Database layer
+│   │   ├── models.go        # User model
+│   │   ├── database.go      # DB connection
+│   │   └── repository.go    # CRUD operations
+│   ├── xray/                # Xray integration
+│   │   ├── manager.go       # Xray instance management
+│   │   ├── config.go        # Config generation
+│   │   └── client_config.go # Client configs
+│   ├── api/                 # REST API
+│   │   ├── handlers.go      # HTTP handlers
+│   │   ├── middleware.go    # Middleware
+│   │   └── responses.go     # JSON responses
+│   ├── monitoring/          # Monitoring
+│   │   ├── log_parser.go    # Log parser
+│   │   └── metrics.go       # Prometheus metrics
+│   └── utils/               # Utilities
+│       ├── crypto.go        # Password hashing
+│       └── qrcode.go        # QR code generation
 ├── prometheus/
-│   └── prometheus.yml    # Metrics collection config
-└── grafana/
-    ├── datasources/
-    │   └── datasource.yml
-    └── dashboards/
-        ├── dashboard.yml
-        └── vpn-metrics.json
+│   └── prometheus.yml       # Prometheus config
+├── grafana/
+│   ├── datasources/         # Data sources
+│   └── dashboards/          # Dashboards
+├── examples/                # Usage examples
+│   ├── api_examples.sh      # API examples
+│   ├── create_test_users.sh # Test users
+│   └── python_client.py     # Python client
+├── docker-compose.yml       # Docker Compose
+├── Makefile                 # Automation
+└── README.md               # Documentation
 ```
 
 ## 🚀 Quick Start
@@ -28,30 +65,63 @@ project/
 ### Prerequisites
 
 - Docker & Docker Compose
-- (Optional) Xray client for testing
+- make (optional, for convenience)
 
-### 1. Generate Xray Keys
-
-Before starting, generate Reality keys for Xray:
+### 1. Setup
 
 ```bash
-docker run --rm teddysun/xray:latest xray x25519
+# Clone the repository
+git clone <repo-url>
+cd vpn-service
+
+# Generate keys and create .env
+make setup
+
+# Edit .env file
+nano .env
 ```
 
-Replace `GENERATE_YOUR_PRIVATE_KEY_HERE` in `xray/config.json` with your generated private key.
+Set required variables:
+- `XRAY_PRIVATE_KEY` - Private key from `make generate-keys`
+- `SERVER_IP` - Your server IP address
 
 ### 2. Start Services
 
 ```bash
-docker-compose up -d
+# Build and start
+make build
+make up
+
+# Check status
+make status
+
+# View logs
+make logs
 ```
 
-### 3. Access Services
+### 3. Create First User
 
-- **Go API**: http://localhost:8080
+```bash
+# Using Makefile
+make create-user
+
+# Or directly with curl
+curl -X POST http://localhost:8080/api/users \
+  -H "Content-Type: application/json" \
+  -d '{
+    "username": "john",
+    "password": "secret123",
+    "traffic_limit": 10737418240,
+    "expires_at": "2025-12-31T23:59:59Z"
+  }'
+```
+
+### 4. Access Services
+
+- **API**: http://localhost:8080
 - **Prometheus**: http://localhost:9090
 - **Grafana**: http://localhost:3000 (admin/admin)
-- **Xray VPN**: Port 443 (VLESS+Reality)
+- **VLESS VPN**: Port 443
 
 ## 📊 Monitoring
 
@@ -78,107 +148,146 @@ Available metrics:
 
 ## 🔧 API Endpoints
 
-### Health Check
+### Users
+
+#### Create User
 ```bash
-curl http://localhost:8080/health
-```
+POST /api/users
+Content-Type: application/json
 
-### Create User
-```bash
-curl -X POST http://localhost:8080/api/users/create \
-  -H "Content-Type: application/json" \
-  -d '{
-    "email": "user@example.com",
-    "uuid": "b831381d-6324-4d53-ad4f-8cda48b30811"
-  }'
-```
-
-### List Users
-```bash
-curl http://localhost:8080/api/users/list
-```
-
-### Get User
-```bash
-curl http://localhost:8080/api/users/get?id=user_1234567890
-```
-
-### Deactivate User
-```bash
-curl -X POST http://localhost:8080/api/users/deactivate?id=user_1234567890
-```
-
-## 🔐 Xray Configuration
-
-The service uses **VLESS + Reality + xHTTP** protocol for maximum security and censorship resistance.
-
-### Client Configuration
-
-```json
 {
-  "protocol": "vless",
-  "settings": {
-    "vnext": [{
-      "address": "YOUR_SERVER_IP",
-      "port": 443,
-      "users": [{
-        "id": "b831381d-6324-4d53-ad4f-8cda48b30811",
-        "encryption": "none",
-        "flow": ""
-      }]
-    }]
-  },
-  "streamSettings": {
-    "network": "xhttp",
-    "security": "reality",
-    "realitySettings": {
-      "serverName": "www.google.com",
-      "fingerprint": "chrome",
-      "publicKey": "YOUR_PUBLIC_KEY",
-      "shortId": "0123456789abcdef",
-      "spiderX": ""
-    },
-    "xhttpSettings": {
-      "path": "/xhttp",
-      "host": "www.google.com"
-    }
-  }
+  "username": "john_doe",
+  "password": "securepass123",
+  "traffic_limit": 10737418240,  // 10GB in bytes, 0 = unlimited
+  "expires_at": "2025-12-31T23:59:59Z"  // optional
 }
 ```
 
-## 📝 Configuration Files
-
-### Customize Xray Users
-
-Edit `xray/config.json` and add users in the `clients` array:
-
-```json
-"clients": [
-  {
-    "id": "UUID_HERE",
-    "email": "user@example.com",
-    "flow": ""
-  }
-]
+#### List Users
+```bash
+GET /api/users
+GET /api/users?active=true  // only active users
 ```
 
-Generate UUIDs: `uuidgen` (macOS/Linux) or online UUID generator
-
-### Adjust Prometheus Scrape Intervals
-
-Edit `prometheus/prometheus.yml`:
-
-```yaml
-global:
-  scrape_interval: 15s  # Adjust as needed
+#### Get User
+```bash
+GET /api/users/{id}
 ```
 
-### Grafana Dashboard Customization
+#### Update User
+```bash
+PATCH /api/users/{id}
+Content-Type: application/json
 
-Import additional dashboards:
-1. Go to Grafana
-2. Click + → Import
-3. Enter dashboard ID or paste JSON
+{
+  "traffic_limit": 21474836480,  // 20GB
+  "is_active": true
+}
+```
+
+#### Delete User
+```bash
+DELETE /api/users/{id}
+```
+
+#### Get User Config
+```bash
+GET /api/users/{id}/config
+```
+
+Returns:
+- JSON config for v2rayN, Nekoray
+- VLESS URI
+- QR code (base64)
+- Traffic statistics
+
+#### Reset Traffic
+```bash
+POST /api/users/{id}/reset-traffic
+```
+
+### System
+
+#### Health Check
+```bash
+GET /health
+```
+
+#### Statistics
+```bash
+GET /stats
+```
+
+#### Prometheus Metrics
+```bash
+GET /metrics
+```
+
+## 🔐 Protocol Configuration
+
+The service uses **VLESS + Reality + xHTTP** protocol for maximum security and censorship resistance.
+
+Client configuration is generated automatically via API:
+```bash
+GET /api/users/{id}/config
+```
+
+This returns JSON config, VLESS URI, and QR code ready for import into VPN clients.
+
+## 🛠️ Makefile Commands
+
+### Main Commands
+```bash
+make help          # Show help
+make setup         # Initial setup
+make up            # Start services
+make down          # Stop services
+make restart       # Restart services
+make logs          # View logs
+make status        # Service status
+make clean         # Remove all data
+```
+
+### User Management
+```bash
+make create-user                    # Create test user
+make list-users                     # List users
+make get-user-config USER_ID=1      # Get config
+make delete-user USER_ID=1          # Delete user
+```
+
+### Testing
+```bash
+make test-health   # Check health
+make test-stats    # Check statistics
+make metrics       # Show metrics
+```
+
+### Backup
+```bash
+make db-backup     # Backup database
+make db-restore    # Restore database
+```
+
+## 📱 Client Applications
+
+### Android
+- v2rayNG
+- Nekoray
+
+### iOS
+- Shadowrocket
+- V2Box
+
+### Windows/macOS/Linux
+- v2rayN / v2rayNG
+- Nekoray
+- Qv2ray
+
+### Connection
+1. Get config: `GET /api/users/{id}/config`
+2. Use QR code or VLESS URI
+3. Import into client application
 
 ## 🛠️ Development
 

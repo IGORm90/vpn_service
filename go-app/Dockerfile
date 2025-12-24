@@ -3,27 +3,41 @@ FROM golang:1.21-alpine AS builder
 
 WORKDIR /build
 
+# Установка зависимостей для сборки
+RUN apk add --no-cache gcc musl-dev sqlite-dev
+
 # Copy go mod files
-COPY go.mod go.sum* ./
-RUN go mod download 2>/dev/null || true
+COPY go.mod go.sum ./
+RUN go mod download
 
 # Copy source code
 COPY . .
 
-# Build the application
-RUN CGO_ENABLED=0 GOOS=linux go build -a -installsuffix cgo -o vpn-service main.go
+# Build the application with CGO enabled for SQLite
+RUN CGO_ENABLED=1 GOOS=linux go build -a -ldflags '-linkmode external -extldflags "-static"' -o vpn-service .
 
 # Final stage
 FROM alpine:latest
 
-RUN apk --no-cache add ca-certificates tzdata
+# Установка runtime зависимостей
+RUN apk --no-cache add ca-certificates tzdata sqlite-libs
+
+# Создание директорий
+RUN mkdir -p /app/data /var/log/xray
 
 WORKDIR /app
 
 # Copy the binary from builder
 COPY --from=builder /build/vpn-service .
 
-EXPOSE 8080
+# Expose ports
+# 443 - VLESS
+# 8080 - API
+# 10085 - Xray Stats API
+EXPOSE 443 8080 10085
+
+# Создание volume точек
+VOLUME ["/app/data", "/var/log/xray"]
 
 CMD ["./vpn-service"]
 

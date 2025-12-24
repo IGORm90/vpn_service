@@ -1,22 +1,7 @@
 version: '3.8'
 
 services:
-  # Xray VPN Service
-  xray:
-    image: teddysun/xray:latest
-    container_name: xray-vpn
-    restart: unless-stopped
-    ports:
-      - "443:443"
-      - "80:80"
-    volumes:
-      - ./xray/config.json:/etc/xray/config.json:ro
-      - xray-logs:/var/log/xray
-    networks:
-      - vpn-network
-    command: xray run -c /etc/xray/config.json
-
-  # Go Application - User Management & Metrics
+  # Go Application with embedded Xray - User Management, VPN & Metrics
   go-app:
     build:
       context: ./go-app
@@ -24,17 +9,36 @@ services:
     container_name: vpn-go-app
     restart: unless-stopped
     ports:
-      - "8080:8080"
+      - "443:443"      # VLESS
+      - "8080:8080"    # API
+      - "10085:10085"  # Xray Stats API
     environment:
-      - XRAY_STATS_API=xray:10085
-      - PROMETHEUS_PORT=8080
+      # Database
+      - DB_PATH=/app/data/vpn.db
+      
+      # Xray Configuration
+      - XRAY_PRIVATE_KEY=${XRAY_PRIVATE_KEY:-GENERATE_YOUR_PRIVATE_KEY_HERE}
+      - XRAY_REALITY_DEST=www.google.com:443
+      - XRAY_REALITY_SNI=www.google.com
+      - XRAY_XHTTP_PATH=/xhttp
+      - XRAY_LOG_LEVEL=info
+      
+      # Logs
+      - LOG_PATH=/var/log/xray/access.log
+      - XRAY_ERROR_LOG=/var/log/xray/error.log
+      
+      # Server
+      - SERVER_PORT=8080
+      - SERVER_IP=${SERVER_IP:-YOUR_SERVER_IP}
     volumes:
-      - ./go-app:/app
+      - vpn-data:/app/data
+      - xray-logs:/var/log/xray
     networks:
       - vpn-network
     depends_on:
-      - xray
       - prometheus
+    cap_add:
+      - NET_ADMIN
 
   # Prometheus - Metrics Collection
   prometheus:
@@ -79,7 +83,8 @@ networks:
     driver: bridge
 
 volumes:
-  xray-logs:
-  prometheus-data:
-  grafana-data:
+  vpn-data:        # SQLite database
+  xray-logs:       # Xray logs
+  prometheus-data: # Prometheus data
+  grafana-data:    # Grafana data
 

@@ -8,19 +8,25 @@
 *.out
 go.work
 
-# Docker
+# Go build artifacts
+/go-app/vpn-service
+/go-app/data/
+*.db
+*.db-shm
+*.db-wal
+
+# Environment variables
 .env
+.env.local
+.env.*.local
+
+# Logs
 *.log
+/logs/
+/var/log/
 
-# Grafana
-grafana/data/
-
-# Prometheus
-prometheus/data/
-
-# Xray
-xray/logs/
-*.log
+# Docker
+*.dockerfile.swp
 
 # IDE
 .vscode/
@@ -28,12 +34,38 @@ xray/logs/
 *.swp
 *.swo
 *~
-
-# OS
 .DS_Store
-Thumbs.db
+
+# Backups
+*.backup
+*.bak
+
+# Test coverage
+*.cover
+coverage.txt
+coverage.html
 
 # Temporary files
 tmp/
 temp/
+*.tmp
 
+# OS
+Thumbs.db
+.directory
+
+# Certificates and keys (keep examples only)
+*.pem
+*.key
+*.crt
+*.cert
+!*.example.*
+
+# SQLite
+*.db-journal
+
+# Grafana
+/grafana/data/
+
+# Prometheus
+/prometheus/data/
