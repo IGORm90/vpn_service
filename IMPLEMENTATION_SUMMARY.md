@@ -7,9 +7,9 @@
 ### 1. База данных SQLite ✅
 
 **Файлы:**
-- `go-app/database/models.go` - Модель User со всеми необходимыми полями
-- `go-app/database/database.go` - Инициализация БД, миграции
-- `go-app/database/repository.go` - Полный CRUD для пользователей
+- `app/database/models.go` - Модель User со всеми необходимыми полями
+- `app/database/database.go` - Инициализация БД, миграции
+- `app/database/repository.go` - Полный CRUD для пользователей
 
 **Особенности:**
 - Использует GORM ORM
@@ -29,9 +29,9 @@
 ### 2. Интеграция Xray-Core ✅
 
 **Файлы:**
-- `go-app/xray/manager.go` - Управление Xray instance
-- `go-app/xray/config.go` - Генерация конфигурации
-- `go-app/xray/client_config.go` - Генерация клиентских конфигураций
+- `app/xray/manager.go` - Управление Xray instance
+- `app/xray/config.go` - Генерация конфигурации
+- `app/xray/client_config.go` - Генерация клиентских конфигураций
 
 **Особенности:**
 - Встроенный Xray в Go приложение
@@ -43,8 +43,8 @@
 ### 3. Мониторинг трафика ✅
 
 **Файлы:**
-- `go-app/monitoring/log_parser.go` - Парсинг логов Xray
-- `go-app/monitoring/metrics.go` - Метрики Prometheus
+- `app/monitoring/log_parser.go` - Парсинг логов Xray
+- `app/monitoring/metrics.go` - Метрики Prometheus
 
 **Особенности:**
 - Tail логов в реальном времени (библиотека nxadm/tail)
@@ -66,9 +66,9 @@
 ### 4. REST API ✅
 
 **Файлы:**
-- `go-app/api/handlers.go` - HTTP обработчики
-- `go-app/api/middleware.go` - Middleware (logging, CORS, recovery)
-- `go-app/api/responses.go` - JSON ответы
+- `app/api/handlers.go` - HTTP обработчики
+- `app/api/middleware.go` - Middleware (logging, CORS, recovery)
+- `app/api/responses.go` - JSON ответы
 
 **Endpoints:**
 - POST /api/users - Создание пользователя
@@ -85,8 +85,8 @@
 ### 5. Генерация клиентских конфигураций ✅
 
 **Файлы:**
-- `go-app/xray/client_config.go`
-- `go-app/utils/qrcode.go`
+- `app/xray/client_config.go`
+- `app/utils/qrcode.go`
 
 **Форматы:**
 - JSON конфигурация (v2rayN, Nekoray)
@@ -97,13 +97,13 @@
 ### 6. Утилиты ✅
 
 **Файлы:**
-- `go-app/utils/crypto.go` - Хэширование паролей (bcrypt), генерация UUID
-- `go-app/utils/qrcode.go` - Генерация QR кодов
+- `app/utils/crypto.go` - Хэширование паролей (bcrypt), генерация UUID
+- `app/utils/qrcode.go` - Генерация QR кодов
 
 ### 7. Docker конфигурация ✅
 
 **Файлы:**
-- `go-app/Dockerfile` - Обновлен под новую архитектуру
+- `app/Dockerfile` - Обновлен под новую архитектуру
 - `docker-compose.yml` - Убран отдельный Xray контейнер
 
 **Изменения:**
@@ -140,7 +140,7 @@
 
 ```
 vpn-service/
-├── go-app/
+├── app/
 │   ├── main.go              # Entry point (219 строк)
 │   ├── go.mod               # Зависимости
 │   ├── go.sum               # Checksums

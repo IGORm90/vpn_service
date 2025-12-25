@@ -2,11 +2,11 @@ version: '3.8'
 
 services:
   # Go Application with embedded Xray - User Management, VPN & Metrics
-  go-app:
+  app:
     build:
-      context: ./go-app
+      context: ./app
       dockerfile: Dockerfile
-    container_name: vpn-go-app
+    container_name: vpn-app
     restart: unless-stopped
     ports:
       - "443:443"      # VLESS

@@ -213,7 +213,7 @@ make db-restore    # Восстановить БД
 
 ```
 vpn-service/
-├── go-app/
+├── app/
 │   ├── main.go              # Точка входа
 │   ├── database/            # База данных
 │   │   ├── models.go        # Модели
@@ -300,7 +300,7 @@ type User struct {
 make logs-go
 
 # Убедитесь что XRAY_PRIVATE_KEY установлен
-docker exec vpn-go-app env | grep XRAY_PRIVATE_KEY
+docker exec vpn-app env | grep XRAY_PRIVATE_KEY
 
 # Проверьте что порт 443 свободен
 sudo lsof -i :443

@@ -179,7 +179,7 @@ make logs
 make logs-go
 
 # Логи Xray
-docker exec vpn-go-app tail -f /var/log/xray/access.log
+docker exec vpn-app tail -f /var/log/xray/access.log
 ```
 
 ## Резервное копирование
@@ -274,7 +274,7 @@ make rebuild
 Настройте мониторинг на подозрительную активность:
 ```bash
 # Просмотр попыток подключений
-docker exec vpn-go-app grep "connection" /var/log/xray/access.log
+docker exec vpn-app grep "connection" /var/log/xray/access.log
 ```
 
 ## Масштабирование
@@ -296,7 +296,7 @@ docker exec vpn-go-app grep "connection" /var/log/xray/access.log
 
 ```bash
 # Проверка логов
-docker logs vpn-go-app
+docker logs vpn-app
 
 # Проверка конфигурации
 docker-compose config
@@ -320,7 +320,7 @@ docker stats
 
 # Увеличение лимитов в docker-compose.yml
 services:
-  go-app:
+  app:
     deploy:
       resources:
         limits:

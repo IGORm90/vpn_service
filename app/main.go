@@ -11,9 +11,6 @@ import (
 	"vpn-service/database"
 	"vpn-service/monitoring"
 	"vpn-service/xray"
-
-	"github.com/gorilla/mux"
-	"github.com/prometheus/client_golang/prometheus/promhttp"
 )
 
 func main() {
@@ -88,38 +85,9 @@ func main() {
 	}
 	defer logMonitor.Stop()
 
-	// Создание API обработчиков
+	// Создание API обработчиков и настройка маршрутизатора
 	handler := api.NewHandler(repo, xrayManager, xrayConfig)
-
-	// Настройка маршрутизатора
-	router := mux.NewRouter()
-
-	// Middleware
-	router.Use(api.LoggingMiddleware)
-	router.Use(api.RecoveryMiddleware)
-	router.Use(api.CORSMiddleware)
-
-	// API endpoints
-	apiRouter := router.PathPrefix("/api").Subrouter()
-
-	// Users
-	apiRouter.HandleFunc("/users", handler.CreateUser).Methods("POST")
-	apiRouter.HandleFunc("/users", handler.ListUsers).Methods("GET")
-	apiRouter.HandleFunc("/users/{id}", handler.GetUser).Methods("GET")
-	apiRouter.HandleFunc("/users/{id}", handler.UpdateUser).Methods("PATCH", "PUT")
-	apiRouter.HandleFunc("/users/{id}", handler.DeleteUser).Methods("DELETE")
-	apiRouter.HandleFunc("/users/{id}/config", handler.GetUserConfig).Methods("GET")
-	apiRouter.HandleFunc("/users/{id}/reset-traffic", handler.ResetTraffic).Methods("POST")
-
-	// System
-	router.HandleFunc("/health", handler.HealthCheck).Methods("GET")
-	router.HandleFunc("/stats", handler.GetStats).Methods("GET")
-
-	// Prometheus metrics
-	router.Handle("/metrics", promhttp.Handler())
-
-	// Статические файлы (опционально)
-	// router.PathPrefix("/").Handler(http.FileServer(http.Dir("./public")))
+	router := api.SetupRouter(handler)
 
 	// Запуск HTTP сервера
 	server := &http.Server{

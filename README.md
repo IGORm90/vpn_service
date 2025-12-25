@@ -26,7 +26,7 @@ A complete VPN service infrastructure with embedded Xray-core, user management, 
 
 ```
 vpn-service/
-├── go-app/
+├── app/
 │   ├── main.go              # Entry point
 │   ├── database/            # Database layer
 │   │   ├── models.go        # User model
@@ -294,8 +294,8 @@ make db-restore    # Restore database
 ### Rebuild Go Service
 
 ```bash
-docker-compose build go-app
-docker-compose up -d go-app
+docker-compose build app
+docker-compose up -d app
 ```
 
 ### View Logs
@@ -305,7 +305,7 @@ docker-compose up -d go-app
 docker-compose logs -f
 
 # Specific service
-docker-compose logs -f go-app
+docker-compose logs -f app
 docker-compose logs -f xray
 ```
 
@@ -346,7 +346,7 @@ docker-compose down -v
 To scale the Go service:
 
 ```bash
-docker-compose up -d --scale go-app=3
+docker-compose up -d --scale app=3
 ```
 
 Add a load balancer (nginx/traefik) in front of multiple instances.

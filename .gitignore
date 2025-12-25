@@ -9,8 +9,8 @@
 go.work
 
 # Go build artifacts
-/go-app/vpn-service
-/go-app/data/
+/app/vpn-service
+/app/data/
 *.db
 *.db-shm
 *.db-wal

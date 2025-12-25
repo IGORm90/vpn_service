@@ -41,7 +41,7 @@ logs: ## View logs from all services
 	docker-compose logs -f
 
 logs-go: ## View logs from Go service
-	docker-compose logs -f go-app
+	docker-compose logs -f app
 
 build: ## Build all services
 	docker-compose build
@@ -117,7 +117,7 @@ install-dev: ## Install development tools
 
 db-backup: ## Backup SQLite database
 	@echo "Backing up database..."
-	@docker cp vpn-go-app:/app/data/vpn.db ./vpn.db.backup
+	@docker cp vpn-app:/app/data/vpn.db ./vpn.db.backup
 	@echo "Database backed up to vpn.db.backup"
 
 db-restore: ## Restore SQLite database from backup
@@ -126,7 +126,7 @@ db-restore: ## Restore SQLite database from backup
 		exit 1; \
 	fi
 	@echo "Restoring database..."
-	@docker cp ./vpn.db.backup vpn-go-app:/app/data/vpn.db
-	@docker-compose restart go-app
+	@docker cp ./vpn.db.backup vpn-app:/app/data/vpn.db
+	@docker-compose restart app
 	@echo "Database restored"
 
