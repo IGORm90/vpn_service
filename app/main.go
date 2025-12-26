@@ -8,9 +8,26 @@ import (
 	"syscall"
 	"time"
 	"vpn-service/api"
+	"vpn-service/controllers"
 	"vpn-service/database"
 	"vpn-service/monitoring"
+	"vpn-service/services"
 	"vpn-service/xray"
+
+	// Импорты для регистрации компонентов Xray
+	_ "github.com/xtls/xray-core/app/dispatcher"
+	_ "github.com/xtls/xray-core/app/log"
+	_ "github.com/xtls/xray-core/app/proxyman/inbound"
+	_ "github.com/xtls/xray-core/app/proxyman/outbound"
+	_ "github.com/xtls/xray-core/app/router"
+	_ "github.com/xtls/xray-core/app/stats"
+	_ "github.com/xtls/xray-core/proxy/blackhole"
+	_ "github.com/xtls/xray-core/proxy/dokodemo"
+	_ "github.com/xtls/xray-core/proxy/freedom"
+	_ "github.com/xtls/xray-core/proxy/vless/inbound"
+	_ "github.com/xtls/xray-core/proxy/vless/outbound"
+	_ "github.com/xtls/xray-core/transport/internet/reality"
+	_ "github.com/xtls/xray-core/transport/internet/tcp"
 )
 
 func main() {
@@ -85,9 +102,16 @@ func main() {
 	}
 	defer logMonitor.Stop()
 
+	// Создание сервисов
+	serverIP := getEnv("SERVER_IP", "YOUR_SERVER_IP")
+	userService := services.NewUserService(repo, xrayManager, xrayConfig, serverIP)
+
+	// Создание контроллеров
+	userController := controllers.NewUserController(userService)
+
 	// Создание API обработчиков и настройка маршрутизатора
 	handler := api.NewHandler(repo, xrayManager, xrayConfig)
-	router := api.SetupRouter(handler)
+	router := api.SetupRouter(handler, userController)
 
 	// Запуск HTTP сервера
 	server := &http.Server{

@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"path/filepath"
 	"strings"
 	"sync"
 	"time"
@@ -73,7 +74,7 @@ func (m *LogMonitor) Start() error {
 	// Проверяем существование файла лога
 	if _, err := os.Stat(m.logPath); os.IsNotExist(err) {
 		log.Printf("Log file does not exist yet, creating: %s", m.logPath)
-		if err := os.MkdirAll(os.Dir(m.logPath), 0755); err != nil {
+		if err := os.MkdirAll(filepath.Dir(m.logPath), 0755); err != nil {
 			return fmt.Errorf("failed to create log directory: %w", err)
 		}
 		if _, err := os.Create(m.logPath); err != nil {

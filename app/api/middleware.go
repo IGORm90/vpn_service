@@ -4,6 +4,7 @@ import (
 	"log"
 	"net/http"
 	"time"
+	"vpn-service/responses"
 )
 
 // LoggingMiddleware логирует HTTP запросы
@@ -59,7 +60,7 @@ func RecoveryMiddleware(next http.Handler) http.Handler {
 		defer func() {
 			if err := recover(); err != nil {
 				log.Printf("Panic recovered: %v", err)
-				SendInternalError(w, "Internal server error")
+				responses.SendInternalError(w, "Internal server error")
 			}
 		}()
 

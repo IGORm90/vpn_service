@@ -1,0 +1,734 @@
+openapi: 3.0.3
+info:
+  title: VPN Service API
+  description: |
+    API для управления VPN сервисом с Xray-core и VLESS Reality.
+    
+    Сервис предоставляет возможности:
+    - Управления пользователями VPN
+    - Генерации конфигураций для подключения
+    - Мониторинга использования трафика
+    - Получения статистики и метрик
+  version: 1.0.0
+  contact:
+    name: API Support
+    email: support@example.com
+  license:
+    name: MIT
+    url: https://opensource.org/licenses/MIT
+
+servers:
+  - url: http://localhost:8080
+    description: Development server
+  - url: https://your-server.com
+    description: Production server
+
+tags:
+  - name: users
+    description: Управление пользователями VPN
+  - name: system
+    description: Системные эндпоинты для мониторинга
+  - name: metrics
+    description: Prometheus метрики
+
+paths:
+  /api/users:
+    post:
+      tags:
+        - users
+      summary: Создание нового пользователя
+      description: Создает нового VPN пользователя с указанными параметрами
+      operationId: createUser
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateUserRequest'
+            examples:
+              basic:
+                summary: Базовый пользователь
+                value:
+                  username: "john_doe"
+                  password: "secure_password123"
+              withLimits:
+                summary: Пользователь с ограничениями
+                value:
+                  username: "jane_smith"
+                  password: "secure_password456"
+                  traffic_limit: 10737418240
+                  expires_at: "2025-12-31T23:59:59Z"
+      responses:
+        '201':
+          description: Пользователь успешно создан
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessResponse'
+              examples:
+                created:
+                  value:
+                    success: true
+                    data:
+                      id: 1
+                      username: "john_doe"
+                      uuid: "550e8400-e29b-41d4-a716-446655440000"
+                      secret: "base64encodedstring"
+                      is_active: true
+                      expires_at: "2025-12-31T23:59:59Z"
+                      traffic_limit: 10737418240
+                      traffic_used: 0
+                      created_at: "2025-12-26T10:00:00Z"
+                      updated_at: "2025-12-26T10:00:00Z"
+        '400':
+          description: Неверные данные запроса
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                invalidUsername:
+                  value:
+                    success: false
+                    error: "Username is required"
+                    code: 400
+                usernameExists:
+                  value:
+                    success: false
+                    error: "Username already exists"
+                    code: 400
+        '500':
+          description: Внутренняя ошибка сервера
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+    get:
+      tags:
+        - users
+      summary: Получение списка пользователей
+      description: Возвращает список всех пользователей или только активных (если указан параметр active=true)
+      operationId: listUsers
+      parameters:
+        - name: active
+          in: query
+          description: Фильтр только активных пользователей
+          required: false
+          schema:
+            type: boolean
+            default: false
+      responses:
+        '200':
+          description: Список пользователей
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/User'
+        '500':
+          description: Внутренняя ошибка сервера
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/users/{id}:
+    get:
+      tags:
+        - users
+      summary: Получение пользователя по ID
+      description: Возвращает данные пользователя по его идентификатору
+      operationId: getUser
+      parameters:
+        - name: id
+          in: path
+          description: ID пользователя
+          required: true
+          schema:
+            type: integer
+            format: int64
+            minimum: 1
+      responses:
+        '200':
+          description: Данные пользователя
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    $ref: '#/components/schemas/User'
+        '400':
+          description: Неверный ID пользователя
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Пользователь не найден
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Внутренняя ошибка сервера
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+    patch:
+      tags:
+        - users
+      summary: Обновление данных пользователя
+      description: Обновляет данные существующего пользователя (пароль, лимит трафика, срок действия, статус активности)
+      operationId: updateUser
+      parameters:
+        - name: id
+          in: path
+          description: ID пользователя
+          required: true
+          schema:
+            type: integer
+            format: int64
+            minimum: 1
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateUserRequest'
+            examples:
+              updatePassword:
+                summary: Обновление пароля
+                value:
+                  password: "new_secure_password"
+              updateLimits:
+                summary: Обновление лимитов
+                value:
+                  traffic_limit: 21474836480
+                  expires_at: "2026-12-31T23:59:59Z"
+              deactivate:
+                summary: Деактивация пользователя
+                value:
+                  is_active: false
+      responses:
+        '200':
+          description: Обновленные данные пользователя
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    $ref: '#/components/schemas/User'
+        '400':
+          description: Неверные данные запроса
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Пользователь не найден
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Внутренняя ошибка сервера
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+    put:
+      tags:
+        - users
+      summary: Обновление данных пользователя (PUT)
+      description: Альтернативный метод для обновления данных пользователя
+      operationId: updateUserPut
+      parameters:
+        - name: id
+          in: path
+          description: ID пользователя
+          required: true
+          schema:
+            type: integer
+            format: int64
+            minimum: 1
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateUserRequest'
+      responses:
+        '200':
+          description: Обновленные данные пользователя
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    $ref: '#/components/schemas/User'
+        '400':
+          description: Неверные данные запроса
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Пользователь не найден
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Внутренняя ошибка сервера
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+    delete:
+      tags:
+        - users
+      summary: Удаление пользователя
+      description: Удаляет пользователя из системы по его идентификатору
+      operationId: deleteUser
+      parameters:
+        - name: id
+          in: path
+          description: ID пользователя
+          required: true
+          schema:
+            type: integer
+            format: int64
+            minimum: 1
+      responses:
+        '200':
+          description: Пользователь успешно удален
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    type: object
+                    properties:
+                      message:
+                        type: string
+                        example: "User deleted successfully"
+        '400':
+          description: Неверный ID пользователя
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Пользователь не найден
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Внутренняя ошибка сервера
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/users/{id}/config:
+    get:
+      tags:
+        - users
+      summary: Получение конфигурации пользователя
+      description: Возвращает конфигурацию VLESS для подключения к VPN (URL и QR-код)
+      operationId: getUserConfig
+      parameters:
+        - name: id
+          in: path
+          description: ID пользователя
+          required: true
+          schema:
+            type: integer
+            format: int64
+            minimum: 1
+      responses:
+        '200':
+          description: Конфигурация пользователя
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    $ref: '#/components/schemas/UserConfig'
+        '400':
+          description: Неверный ID пользователя
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Пользователь не найден
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Внутренняя ошибка сервера
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/users/{id}/reset-traffic:
+    post:
+      tags:
+        - users
+      summary: Сброс трафика пользователя
+      description: Сбрасывает счетчик использованного трафика пользователя до нуля
+      operationId: resetTraffic
+      parameters:
+        - name: id
+          in: path
+          description: ID пользователя
+          required: true
+          schema:
+            type: integer
+            format: int64
+            minimum: 1
+      responses:
+        '200':
+          description: Трафик успешно сброшен
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    type: object
+                    properties:
+                      message:
+                        type: string
+                        example: "Traffic reset successfully"
+        '400':
+          description: Неверный ID пользователя
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Пользователь не найден
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /health:
+    get:
+      tags:
+        - system
+      summary: Проверка работоспособности сервиса
+      description: Возвращает статус работоспособности VPN сервиса и его компонентов
+      operationId: healthCheck
+      responses:
+        '200':
+          description: Статус работоспособности
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    $ref: '#/components/schemas/HealthStatus'
+
+  /stats:
+    get:
+      tags:
+        - system
+      summary: Получение статистики сервиса
+      description: Возвращает общую статистику использования VPN сервиса (количество пользователей, трафик и т.д.)
+      operationId: getStats
+      responses:
+        '200':
+          description: Статистика сервиса
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    $ref: '#/components/schemas/ServiceStats'
+        '500':
+          description: Внутренняя ошибка сервера
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /metrics:
+    get:
+      tags:
+        - metrics
+      summary: Метрики Prometheus
+      description: Эндпоинт для сбора метрик Prometheus в текстовом формате
+      operationId: getMetrics
+      responses:
+        '200':
+          description: Prometheus метрики в текстовом формате
+          content:
+            text/plain:
+              schema:
+                type: string
+                example: |
+                  # HELP vpn_users_total Total number of VPN users
+                  # TYPE vpn_users_total gauge
+                  vpn_users_total 10
+                  # HELP vpn_active_users_total Number of active VPN users
+                  # TYPE vpn_active_users_total gauge
+                  vpn_active_users_total 8
+
+components:
+  schemas:
+    CreateUserRequest:
+      type: object
+      required:
+        - username
+        - password
+      properties:
+        username:
+          type: string
+          description: Уникальное имя пользователя
+          example: "john_doe"
+          minLength: 3
+          maxLength: 50
+        password:
+          type: string
+          description: Пароль пользователя
+          example: "secure_password123"
+          minLength: 8
+          format: password
+        traffic_limit:
+          type: integer
+          format: int64
+          description: Лимит трафика в байтах (0 = безлимитный)
+          example: 10737418240
+          minimum: 0
+          default: 0
+        expires_at:
+          type: string
+          format: date-time
+          description: Дата истечения срока действия аккаунта
+          example: "2025-12-31T23:59:59Z"
+
+    UpdateUserRequest:
+      type: object
+      properties:
+        password:
+          type: string
+          description: Новый пароль пользователя
+          example: "new_secure_password"
+          minLength: 8
+          format: password
+        traffic_limit:
+          type: integer
+          format: int64
+          description: Лимит трафика в байтах (0 = безлимитный)
+          example: 21474836480
+          minimum: 0
+        expires_at:
+          type: string
+          format: date-time
+          description: Дата истечения срока действия аккаунта
+          example: "2026-12-31T23:59:59Z"
+        is_active:
+          type: boolean
+          description: Активность пользователя
+          example: true
+
+    User:
+      type: object
+      properties:
+        id:
+          type: integer
+          format: uint
+          description: Уникальный идентификатор пользователя
+          example: 1
+        username:
+          type: string
+          description: Имя пользователя
+          example: "john_doe"
+        uuid:
+          type: string
+          format: uuid
+          description: UUID для VLESS протокола
+          example: "550e8400-e29b-41d4-a716-446655440000"
+        secret:
+          type: string
+          description: Секретный ключ (для будущего Shadowsocks)
+          example: "base64encodedstring"
+        is_active:
+          type: boolean
+          description: Активен ли пользователь
+          example: true
+        expires_at:
+          type: string
+          format: date-time
+          description: Дата истечения срока действия
+          example: "2025-12-31T23:59:59Z"
+        traffic_limit:
+          type: integer
+          format: int64
+          description: Лимит трафика в байтах (0 = безлимитный)
+          example: 10737418240
+        traffic_used:
+          type: integer
+          format: int64
+          description: Использованный трафик в байтах
+          example: 1073741824
+        created_at:
+          type: string
+          format: date-time
+          description: Дата создания
+          example: "2025-01-01T10:00:00Z"
+        updated_at:
+          type: string
+          format: date-time
+          description: Дата последнего обновления
+          example: "2025-12-26T10:00:00Z"
+
+    UserConfig:
+      type: object
+      properties:
+        vless_url:
+          type: string
+          description: URL для подключения VLESS
+          example: "vless://550e8400-e29b-41d4-a716-446655440000@server.com:443?type=tcp&security=reality&..."
+        qr_code:
+          type: string
+          description: QR-код в формате base64
+          example: "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAA..."
+        config_json:
+          type: string
+          description: JSON конфигурация для клиента
+          example: '{"outbounds":[{"protocol":"vless",...}]}'
+
+    HealthStatus:
+      type: object
+      properties:
+        status:
+          type: string
+          description: Общий статус сервиса
+          example: "healthy"
+          enum:
+            - healthy
+            - degraded
+            - unhealthy
+        timestamp:
+          type: string
+          format: date-time
+          description: Время проверки
+          example: "2025-12-26T10:00:00Z"
+        components:
+          type: object
+          description: Статус отдельных компонентов
+          properties:
+            database:
+              type: string
+              example: "ok"
+            xray:
+              type: string
+              example: "ok"
+            monitoring:
+              type: string
+              example: "ok"
+
+    ServiceStats:
+      type: object
+      properties:
+        total_users:
+          type: integer
+          description: Общее количество пользователей
+          example: 50
+        active_users:
+          type: integer
+          description: Количество активных пользователей
+          example: 42
+        total_traffic:
+          type: integer
+          format: int64
+          description: Общий использованный трафик в байтах
+          example: 107374182400
+        connected_users:
+          type: integer
+          description: Количество подключенных пользователей в данный момент
+          example: 15
+        uptime:
+          type: string
+          description: Время работы сервиса
+          example: "72h15m30s"
+
+    SuccessResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: true
+        data:
+          type: object
+          description: Данные ответа
+        message:
+          type: string
+          description: Опциональное сообщение
+          example: "Operation completed successfully"
+
+    ErrorResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: false
+        error:
+          type: string
+          description: Описание ошибки
+          example: "User not found"
+        code:
+          type: integer
+          description: HTTP код ошибки
+          example: 404
+

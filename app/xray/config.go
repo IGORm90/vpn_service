@@ -150,7 +150,7 @@ func generateInbounds(users []*database.User, cfg *Config) []map[string]interfac
 				"decryption": "none",
 			},
 			"streamSettings": map[string]interface{}{
-				"network":  "xhttp",
+				"network":  "tcp",
 				"security": "reality",
 				"realitySettings": map[string]interface{}{
 					"show":        false,
@@ -159,11 +159,6 @@ func generateInbounds(users []*database.User, cfg *Config) []map[string]interfac
 					"serverNames": cfg.RealityServerNames,
 					"privateKey":  cfg.RealityPrivateKey,
 					"shortIds":    cfg.RealityShortIds,
-				},
-				"xhttpSettings": map[string]interface{}{
-					"mode": "auto",
-					"path": cfg.XHTTPPath,
-					"host": cfg.RealityServerNames[0],
 				},
 			},
 			"sniffing": map[string]interface{}{

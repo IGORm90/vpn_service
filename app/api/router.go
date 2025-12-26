@@ -1,12 +1,14 @@
 package api
 
 import (
+	"vpn-service/controllers"
+
 	"github.com/gorilla/mux"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 )
 
 // SetupRouter настраивает и возвращает настроенный маршрутизатор
-func SetupRouter(handler *Handler) *mux.Router {
+func SetupRouter(handler *Handler, userController *controllers.UserController) *mux.Router {
 	router := mux.NewRouter()
 
 	// Middleware
@@ -17,16 +19,16 @@ func SetupRouter(handler *Handler) *mux.Router {
 	// API endpoints
 	apiRouter := router.PathPrefix("/api").Subrouter()
 
-	// Users
-	apiRouter.HandleFunc("/users", handler.CreateUser).Methods("POST")
-	apiRouter.HandleFunc("/users", handler.ListUsers).Methods("GET")
-	apiRouter.HandleFunc("/users/{id}", handler.GetUser).Methods("GET")
-	apiRouter.HandleFunc("/users/{id}", handler.UpdateUser).Methods("PATCH", "PUT")
-	apiRouter.HandleFunc("/users/{id}", handler.DeleteUser).Methods("DELETE")
-	apiRouter.HandleFunc("/users/{id}/config", handler.GetUserConfig).Methods("GET")
-	apiRouter.HandleFunc("/users/{id}/reset-traffic", handler.ResetTraffic).Methods("POST")
+	// Users - используем контроллер
+	apiRouter.HandleFunc("/users", userController.CreateUser).Methods("POST")
+	apiRouter.HandleFunc("/users", userController.ListUsers).Methods("GET")
+	apiRouter.HandleFunc("/users/{id}", userController.GetUser).Methods("GET")
+	apiRouter.HandleFunc("/users/{id}", userController.UpdateUser).Methods("PATCH", "PUT")
+	apiRouter.HandleFunc("/users/{id}", userController.DeleteUser).Methods("DELETE")
+	apiRouter.HandleFunc("/users/{id}/config", userController.GetUserConfig).Methods("GET")
+	apiRouter.HandleFunc("/users/{id}/reset-traffic", userController.ResetTraffic).Methods("POST")
 
-	// System
+	// System - используем handler для системных endpoints
 	router.HandleFunc("/health", handler.HealthCheck).Methods("GET")
 	router.HandleFunc("/stats", handler.GetStats).Methods("GET")
 
