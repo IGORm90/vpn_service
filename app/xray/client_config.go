@@ -24,8 +24,6 @@ func GenerateClientJSON(user *database.User, cfg *Config, serverIP string) (stri
 		return "", fmt.Errorf("user cannot connect (inactive, expired or over limit)")
 	}
 
-	// Публичный ключ нужно вычислить из приватного или использовать заранее созданный
-	// Для простоты используем placeholder, в реальности нужно добавить публичный ключ в конфиг
 	clientConfig := map[string]interface{}{
 		"protocol": "vless",
 		"settings": map[string]interface{}{
@@ -44,18 +42,14 @@ func GenerateClientJSON(user *database.User, cfg *Config, serverIP string) (stri
 			},
 		},
 		"streamSettings": map[string]interface{}{
-			"network":  "xhttp",
+			"network":  "tcp",
 			"security": "reality",
 			"realitySettings": map[string]interface{}{
 				"serverName":  cfg.RealityServerNames[0],
 				"fingerprint": "chrome",
-				"publicKey":   "YOUR_PUBLIC_KEY_HERE", // TODO: вычислить из privateKey
+				"publicKey":   cfg.RealityPublicKey,
 				"shortId":     cfg.RealityShortIds[1],
 				"spiderX":     "",
-			},
-			"xhttpSettings": map[string]interface{}{
-				"path": cfg.XHTTPPath,
-				"host": cfg.RealityServerNames[0],
 			},
 		},
 	}
@@ -76,14 +70,12 @@ func GenerateVlessURI(user *database.User, cfg *Config, serverIP string) (string
 
 	// Формат: vless://UUID@SERVER:PORT?params#REMARK
 	params := url.Values{}
-	params.Set("type", "xhttp")
+	params.Set("type", "tcp")
 	params.Set("security", "reality")
-	params.Set("pbk", "YOUR_PUBLIC_KEY_HERE") // TODO: публичный ключ
+	params.Set("pbk", cfg.RealityPublicKey)
 	params.Set("fp", "chrome")
 	params.Set("sni", cfg.RealityServerNames[0])
 	params.Set("sid", cfg.RealityShortIds[1])
-	params.Set("path", cfg.XHTTPPath)
-	params.Set("host", cfg.RealityServerNames[0])
 
 	uri := fmt.Sprintf("vless://%s@%s:%d?%s#%s",
 		user.UUID,
@@ -116,17 +108,13 @@ func GenerateClashConfig(user *database.User, cfg *Config, serverIP string) (str
 				"server":  serverIP,
 				"port":    cfg.Port,
 				"uuid":    user.UUID,
-				"network": "xhttp",
+				"network": "tcp",
 				"tls":     true,
 				"udp":     true,
 				"flow":    "",
 				"reality-opts": map[string]interface{}{
-					"public-key": "YOUR_PUBLIC_KEY_HERE",
+					"public-key": cfg.RealityPublicKey,
 					"short-id":   cfg.RealityShortIds[1],
-				},
-				"xhttp-opts": map[string]interface{}{
-					"path": cfg.XHTTPPath,
-					"host": cfg.RealityServerNames[0],
 				},
 			},
 		},

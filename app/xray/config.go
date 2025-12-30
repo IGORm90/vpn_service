@@ -14,6 +14,7 @@ import (
 type Config struct {
 	Port               int
 	RealityPrivateKey  string
+	RealityPublicKey   string
 	RealityDest        string
 	RealityServerNames []string
 	RealityShortIds    []string
@@ -29,8 +30,9 @@ func DefaultConfig() *Config {
 	return &Config{
 		Port:               443,
 		RealityPrivateKey:  os.Getenv("XRAY_PRIVATE_KEY"),
-		RealityDest:        "www.google.com:443",
-		RealityServerNames: []string{"www.google.com"},
+		RealityPublicKey:   os.Getenv("XRAY_PUBLIC_KEY"),
+		RealityDest:        "eh.vk.com:443",
+		RealityServerNames: []string{"eh.vk.com"},
 		RealityShortIds:    []string{"", "0123456789abcdef"},
 		XHTTPPath:          "/xhttp",
 		LogLevel:           "info",
@@ -189,6 +191,10 @@ func ValidateConfig(cfg *Config) error {
 
 	if cfg.RealityPrivateKey == "" {
 		return fmt.Errorf("reality private key is required")
+	}
+
+	if cfg.RealityPublicKey == "" {
+		return fmt.Errorf("reality public key is required")
 	}
 
 	if cfg.RealityDest == "" {

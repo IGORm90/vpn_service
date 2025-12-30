@@ -56,8 +56,9 @@ func main() {
 	xrayConfig := &xray.Config{
 		Port:               443,
 		RealityPrivateKey:  xrayPrivateKey,
-		RealityDest:        getEnv("XRAY_REALITY_DEST", "www.google.com:443"),
-		RealityServerNames: []string{getEnv("XRAY_REALITY_SNI", "www.google.com")},
+		RealityPublicKey:   getEnv("XRAY_PUBLIC_KEY", ""),
+		RealityDest:        getEnv("XRAY_REALITY_DEST", "eh.vk.com:443"),
+		RealityServerNames: []string{getEnv("XRAY_REALITY_SNI", "eh.vk.com")},
 		RealityShortIds:    []string{"", "0123456789abcdef"},
 		XHTTPPath:          getEnv("XRAY_XHTTP_PATH", "/xhttp"),
 		LogLevel:           getEnv("XRAY_LOG_LEVEL", "info"),

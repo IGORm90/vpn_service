@@ -17,9 +17,10 @@ services:
       - DB_PATH=/app/data/vpn.db
       
       # Xray Configuration
-      - XRAY_PRIVATE_KEY=${XRAY_PRIVATE_KEY:-oLXE99kUAhSxx0oEBVbl6ogvMBP3KCIkWEge93F4-lQ}
-      - XRAY_REALITY_DEST=www.google.com:443
-      - XRAY_REALITY_SNI=www.google.com
+      - XRAY_PRIVATE_KEY=${XRAY_PRIVATE_KEY}
+      - XRAY_PUBLIC_KEY=${XRAY_PUBLIC_KEY}
+      - XRAY_REALITY_DEST=eh.vk.com:443
+      - XRAY_REALITY_SNI=eh.vk.com
       - XRAY_XHTTP_PATH=/xhttp
       - XRAY_LOG_LEVEL=info
       
