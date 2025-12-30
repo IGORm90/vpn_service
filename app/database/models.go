@@ -8,7 +8,6 @@ import (
 type User struct {
 	ID           uint      `gorm:"primaryKey" json:"id"`
 	Username     string    `gorm:"uniqueIndex;not null" json:"username"`
-	Password     string    `gorm:"not null" json:"-"` // не отдаем в JSON
 	UUID         string    `gorm:"uniqueIndex;not null" json:"uuid"`
 	Secret       string    `json:"secret"` // для будущего Shadowsocks
 	IsActive     bool      `gorm:"default:true" json:"is_active"`

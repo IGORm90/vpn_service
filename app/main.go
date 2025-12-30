@@ -108,11 +108,11 @@ func main() {
 	userService := services.NewUserService(repo, xrayManager, xrayConfig, serverIP)
 
 	// Создание контроллеров
+	mainController := controllers.NewMainController(userService)
 	userController := controllers.NewUserController(userService)
 
-	// Создание API обработчиков и настройка маршрутизатора
-	handler := api.NewHandler(repo, xrayManager, xrayConfig)
-	router := api.SetupRouter(handler, userController)
+	// Настройка маршрутизатора
+	router := api.SetupRouter(mainController, userController)
 
 	// Запуск HTTP сервера
 	server := &http.Server{

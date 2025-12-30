@@ -8,7 +8,7 @@ import (
 )
 
 // SetupRouter настраивает и возвращает настроенный маршрутизатор
-func SetupRouter(handler *Handler, userController *controllers.UserController) *mux.Router {
+func SetupRouter(mainController *controllers.MainController, userController *controllers.UserController) *mux.Router {
 	router := mux.NewRouter()
 
 	// Middleware
@@ -18,6 +18,8 @@ func SetupRouter(handler *Handler, userController *controllers.UserController) *
 
 	// API endpoints
 	apiRouter := router.PathPrefix("/api").Subrouter()
+	// Применяем аутентификацию ко всем API endpoints
+	apiRouter.Use(AuthMiddleware)
 
 	// Users - используем контроллер
 	apiRouter.HandleFunc("/users", userController.CreateUser).Methods("POST")
@@ -28,9 +30,9 @@ func SetupRouter(handler *Handler, userController *controllers.UserController) *
 	apiRouter.HandleFunc("/users/{id}/config", userController.GetUserConfig).Methods("GET")
 	apiRouter.HandleFunc("/users/{id}/reset-traffic", userController.ResetTraffic).Methods("POST")
 
-	// System - используем handler для системных endpoints
-	router.HandleFunc("/health", handler.HealthCheck).Methods("GET")
-	router.HandleFunc("/stats", handler.GetStats).Methods("GET")
+	// System - используем main контроллер для системных endpoints
+	router.HandleFunc("/health", mainController.HealthCheck).Methods("GET")
+	router.HandleFunc("/stats", mainController.GetStats).Methods("GET")
 
 	// Prometheus metrics
 	router.Handle("/metrics", promhttp.Handler())

@@ -13,9 +13,7 @@ var (
 	ErrUserNotFound    = errors.New("user not found")
 	ErrUsernameExists  = errors.New("username already exists")
 	ErrInvalidUsername = errors.New("username is required")
-	ErrInvalidPassword = errors.New("password is required")
 	ErrInvalidUserID   = errors.New("invalid user ID")
-	ErrPasswordHash    = errors.New("failed to hash password")
 	ErrCreateUser      = errors.New("failed to create user")
 	ErrUpdateUser      = errors.New("failed to update user")
 	ErrDeleteUser      = errors.New("failed to delete user")
@@ -44,14 +42,12 @@ func NewUserService(repo *database.Repository, xrayMgr *xray.Manager, xrayCfg *x
 // CreateUserDTO структура для создания пользователя
 type CreateUserDTO struct {
 	Username     string
-	Password     string
 	TrafficLimit int64
 	ExpiresAt    time.Time
 }
 
 // UpdateUserDTO структура для обновления пользователя
 type UpdateUserDTO struct {
-	Password     *string
 	TrafficLimit *int64
 	ExpiresAt    *time.Time
 	IsActive     *bool
@@ -78,25 +74,15 @@ func (s *UserService) CreateUser(dto CreateUserDTO) (*database.User, error) {
 	if dto.Username == "" {
 		return nil, ErrInvalidUsername
 	}
-	if dto.Password == "" {
-		return nil, ErrInvalidPassword
-	}
 
 	// Проверяем уникальность
 	if _, err := s.repository.GetUserByUsername(dto.Username); err == nil {
 		return nil, ErrUsernameExists
 	}
 
-	// Хэшируем пароль
-	hashedPassword, err := utils.HashPassword(dto.Password)
-	if err != nil {
-		return nil, fmt.Errorf("%w: %v", ErrPasswordHash, err)
-	}
-
 	// Создаем пользователя
 	user := &database.User{
 		Username:     dto.Username,
-		Password:     hashedPassword,
 		UUID:         utils.GenerateUUID(),
 		IsActive:     true,
 		TrafficLimit: dto.TrafficLimit,
@@ -152,14 +138,6 @@ func (s *UserService) UpdateUser(id uint, dto UpdateUserDTO) (*database.User, er
 	}
 
 	// Обновляем поля если они указаны
-	if dto.Password != nil {
-		hashedPassword, err := utils.HashPassword(*dto.Password)
-		if err != nil {
-			return nil, fmt.Errorf("%w: %v", ErrPasswordHash, err)
-		}
-		user.Password = hashedPassword
-	}
-
 	if dto.TrafficLimit != nil {
 		user.TrafficLimit = *dto.TrafficLimit
 	}

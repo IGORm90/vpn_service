@@ -19,8 +19,8 @@ services:
       # Xray Configuration
       - XRAY_PRIVATE_KEY=${XRAY_PRIVATE_KEY}
       - XRAY_PUBLIC_KEY=${XRAY_PUBLIC_KEY}
-      - XRAY_REALITY_DEST=eh.vk.com:443
-      - XRAY_REALITY_SNI=eh.vk.com
+      - XRAY_REALITY_DEST=${REALITY_DEST}
+      - XRAY_REALITY_SNI=${REALITY_SERVER_NAMES}
       - XRAY_XHTTP_PATH=/xhttp
       - XRAY_LOG_LEVEL=info
       
@@ -31,6 +31,9 @@ services:
       # Server
       - SERVER_PORT=8080
       - SERVER_IP=${SERVER_IP:-YOUR_SERVER_IP}
+      
+      # API Authentication
+      - API_BEARER_TOKEN=${API_BEARER_TOKEN}
     volumes:
       - vpn-data:/app/data
       - xray-logs:/var/log/xray

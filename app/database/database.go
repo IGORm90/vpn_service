@@ -23,7 +23,7 @@ func InitDatabase(dbPath string) error {
 
 	// Открываем соединение с БД
 	db, err := gorm.Open(sqlite.Open(dbPath), &gorm.Config{
-		Logger: logger.Default.LogMode(logger.Info),
+		Logger: logger.Default.LogMode(logger.Silent),
 	})
 	if err != nil {
 		return fmt.Errorf("failed to connect to database: %w", err)

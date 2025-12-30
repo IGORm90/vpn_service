@@ -26,14 +26,12 @@ func NewUserController(userService *services.UserService) *UserController {
 // CreateUserRequest представляет запрос на создание пользователя
 type CreateUserRequest struct {
 	Username     string    `json:"username"`
-	Password     string    `json:"password"`
 	TrafficLimit int64     `json:"traffic_limit,omitempty"`
 	ExpiresAt    time.Time `json:"expires_at,omitempty"`
 }
 
 // UpdateUserRequest представляет запрос на обновление пользователя
 type UpdateUserRequest struct {
-	Password     *string    `json:"password,omitempty"`
 	TrafficLimit *int64     `json:"traffic_limit,omitempty"`
 	ExpiresAt    *time.Time `json:"expires_at,omitempty"`
 	IsActive     *bool      `json:"is_active,omitempty"`
@@ -49,7 +47,6 @@ func (c *UserController) CreateUser(w http.ResponseWriter, r *http.Request) {
 
 	dto := services.CreateUserDTO{
 		Username:     req.Username,
-		Password:     req.Password,
 		TrafficLimit: req.TrafficLimit,
 		ExpiresAt:    req.ExpiresAt,
 	}
@@ -59,8 +56,6 @@ func (c *UserController) CreateUser(w http.ResponseWriter, r *http.Request) {
 		switch err {
 		case services.ErrInvalidUsername:
 			responses.SendBadRequest(w, "Username is required")
-		case services.ErrInvalidPassword:
-			responses.SendBadRequest(w, "Password is required")
 		case services.ErrUsernameExists:
 			responses.SendBadRequest(w, "Username already exists")
 		default:
@@ -128,7 +123,6 @@ func (c *UserController) UpdateUser(w http.ResponseWriter, r *http.Request) {
 	}
 
 	dto := services.UpdateUserDTO{
-		Password:     req.Password,
 		TrafficLimit: req.TrafficLimit,
 		ExpiresAt:    req.ExpiresAt,
 		IsActive:     req.IsActive,
