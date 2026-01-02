@@ -19,10 +19,10 @@ services:
       # Xray Configuration
       - XRAY_PRIVATE_KEY=${XRAY_PRIVATE_KEY}
       - XRAY_PUBLIC_KEY=${XRAY_PUBLIC_KEY}
-      - XRAY_REALITY_DEST=${REALITY_DEST}
-      - XRAY_REALITY_SNI=${REALITY_SERVER_NAMES}
+      - XRAY_REALITY_DEST=${REALITY_DEST:-www.microsoft.com:443}
+      - XRAY_REALITY_SNI=${REALITY_SERVER_NAMES:-www.microsoft.com}
       - XRAY_XHTTP_PATH=/xhttp
-      - XRAY_LOG_LEVEL=info
+      - XRAY_LOG_LEVEL=warning
       
       # Logs
       - LOG_PATH=/var/log/xray/access.log
@@ -40,9 +40,37 @@ services:
     networks:
       - vpn-network
     depends_on:
-      - prometheus
+      prometheus:
+        condition: service_healthy
     cap_add:
       - NET_ADMIN
+    security_opt:
+      - no-new-privileges:true
+    # Resource limits оптимизированы под 4GB RAM сервер
+    deploy:
+      resources:
+        limits:
+          cpus: '1.5'       # Оставляем 0.5 CPU для системы
+          memory: 2G        # 50% от 4GB для основного приложения
+        reservations:
+          cpus: '0.5'
+          memory: 512M
+    # Healthcheck для мониторинга
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:8080/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    # Оптимизация логов (ротация)
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "50m"
+        max-file: "3"
+    # tmpfs для временных файлов (быстрее чем диск)
+    tmpfs:
+      - /tmp:size=256M,mode=1777
 
   # Prometheus - Metrics Collection
   prometheus:
@@ -57,10 +85,36 @@ services:
     command:
       - '--config.file=/etc/prometheus/prometheus.yml'
       - '--storage.tsdb.path=/prometheus'
+      - '--storage.tsdb.retention.time=15d'           # Хранить 15 дней
+      - '--storage.tsdb.retention.size=2GB'           # Максимум 2GB
       - '--web.console.libraries=/usr/share/prometheus/console_libraries'
       - '--web.console.templates=/usr/share/prometheus/consoles'
+      - '--web.enable-lifecycle'                      # Для hot reload
     networks:
       - vpn-network
+    security_opt:
+      - no-new-privileges:true
+    # Resource limits
+    deploy:
+      resources:
+        limits:
+          cpus: '0.3'
+          memory: 768M
+        reservations:
+          cpus: '0.1'
+          memory: 256M
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:9090/-/healthy"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "20m"
+        max-file: "2"
+    user: "65534:65534"  # nobody user для безопасности
 
   # Grafana - Visualization Dashboard
   grafana:
@@ -70,9 +124,15 @@ services:
     ports:
       - "3000:3000"
     environment:
-      - GF_SECURITY_ADMIN_USER=admin
-      - GF_SECURITY_ADMIN_PASSWORD=admin
+      - GF_SECURITY_ADMIN_USER=${GRAFANA_USER:-admin}
+      - GF_SECURITY_ADMIN_PASSWORD=${GRAFANA_PASSWORD:-admin}
       - GF_INSTALL_PLUGINS=
+      - GF_SERVER_ROOT_URL=http://localhost:3000
+      - GF_ANALYTICS_REPORTING_ENABLED=false
+      - GF_ANALYTICS_CHECK_FOR_UPDATES=false
+      - GF_USERS_ALLOW_SIGN_UP=false
+      - GF_LOG_MODE=console
+      - GF_LOG_LEVEL=warn
     volumes:
       - grafana-data:/var/lib/grafana
       - ./grafana/dashboards:/etc/grafana/provisioning/dashboards:ro
@@ -80,15 +140,48 @@ services:
     networks:
       - vpn-network
     depends_on:
-      - prometheus
+      prometheus:
+        condition: service_healthy
+    security_opt:
+      - no-new-privileges:true
+    # Resource limits
+    deploy:
+      resources:
+        limits:
+          cpus: '0.2'
+          memory: 512M
+        reservations:
+          cpus: '0.05'
+          memory: 128M
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:3000/api/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "20m"
+        max-file: "2"
+    user: "472:472"  # grafana user
 
 networks:
   vpn-network:
     driver: bridge
+    driver_opts:
+      com.docker.network.driver.mtu: 1500
+    ipam:
+      config:
+        - subnet: 172.25.0.0/16
 
 volumes:
-  vpn-data:        # SQLite database
-  xray-logs:       # Xray logs
-  prometheus-data: # Prometheus data
-  grafana-data:    # Grafana data
+  vpn-data:
+    driver: local
+  xray-logs:
+    driver: local
+  prometheus-data:
+    driver: local
+  grafana-data:
+    driver: local
 
