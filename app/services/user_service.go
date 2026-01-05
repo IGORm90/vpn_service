@@ -41,6 +41,7 @@ func NewUserService(repo *database.Repository, xrayMgr *xray.Manager, xrayCfg *x
 
 // CreateUserDTO структура для создания пользователя
 type CreateUserDTO struct {
+	ID           uint
 	Username     string
 	TrafficLimit int64
 	ExpiresAt    time.Time
@@ -82,6 +83,7 @@ func (s *UserService) CreateUser(dto CreateUserDTO) (*database.User, error) {
 
 	// Создаем пользователя
 	user := &database.User{
+		ID:           dto.ID,
 		Username:     dto.Username,
 		UUID:         utils.GenerateUUID(),
 		IsActive:     true,
