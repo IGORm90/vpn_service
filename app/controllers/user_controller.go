@@ -25,7 +25,6 @@ func NewUserController(userService *services.UserService) *UserController {
 
 // CreateUserRequest представляет запрос на создание пользователя
 type CreateUserRequest struct {
-	ID           uint      `json:"id,omitempty"`
 	Username     string    `json:"username"`
 	TrafficLimit int64     `json:"traffic_limit,omitempty"`
 	ExpiresAt    time.Time `json:"expires_at,omitempty"`
@@ -47,7 +46,6 @@ func (c *UserController) CreateUser(w http.ResponseWriter, r *http.Request) {
 	}
 
 	dto := services.CreateUserDTO{
-		ID:           req.ID,
 		Username:     req.Username,
 		TrafficLimit: req.TrafficLimit,
 		ExpiresAt:    req.ExpiresAt,
