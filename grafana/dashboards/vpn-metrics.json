@@ -78,7 +78,7 @@
       },
       "targets": [
         {
-          "expr": "vpn_active_users",
+          "expr": "vpn_active_users_total",
           "refId": "A",
           "legendFormat": "Active Users"
         }
@@ -146,7 +146,7 @@
       },
       "targets": [
         {
-          "expr": "rate(vpn_total_connections[5m])",
+          "expr": "rate(vpn_connections_total[5m])",
           "refId": "A",
           "legendFormat": "Connections/sec"
         }
@@ -214,14 +214,14 @@
       },
       "targets": [
         {
-          "expr": "rate(vpn_bandwidth_bytes{direction=\"upload\"}[5m])",
+          "expr": "rate(vpn_user_traffic_bytes{direction=\"upload\"}[5m])",
           "refId": "A",
-          "legendFormat": "Upload - {{user_id}}"
+          "legendFormat": "Upload - {{username}}"
         },
         {
-          "expr": "rate(vpn_bandwidth_bytes{direction=\"download\"}[5m])",
+          "expr": "rate(vpn_user_traffic_bytes{direction=\"download\"}[5m])",
           "refId": "B",
-          "legendFormat": "Download - {{user_id}}"
+          "legendFormat": "Download - {{username}}"
         }
       ],
       "title": "Bandwidth Usage",
@@ -275,7 +275,7 @@
       },
       "targets": [
         {
-          "expr": "vpn_active_users",
+          "expr": "vpn_active_users_total",
           "refId": "A"
         }
       ],
@@ -324,7 +324,7 @@
       },
       "targets": [
         {
-          "expr": "vpn_total_connections",
+          "expr": "vpn_connections_total",
           "refId": "A"
         }
       ],
@@ -369,7 +369,7 @@
       },
       "targets": [
         {
-          "expr": "sum by (direction) (vpn_bandwidth_bytes)",
+          "expr": "sum by (direction) (vpn_user_traffic_bytes)",
           "refId": "A",
           "legendFormat": "{{direction}}"
         }
