@@ -44,6 +44,9 @@ services:
         condition: service_healthy
     cap_add:
       - NET_ADMIN
+    sysctls:
+      - net.ipv4.ip_forward=1
+      - net.ipv6.conf.all.forwarding=1
     security_opt:
       - no-new-privileges:true
     # Resource limits оптимизированы под 4GB RAM сервер

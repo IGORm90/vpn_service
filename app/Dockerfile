@@ -20,10 +20,13 @@ RUN CGO_ENABLED=1 GOOS=linux go build -a -ldflags '-linkmode external -extldflag
 FROM alpine:latest
 
 # Установка runtime зависимостей
-RUN apk --no-cache add ca-certificates tzdata sqlite-libs
+RUN apk --no-cache add ca-certificates tzdata sqlite-libs iptables
 
 # Создание директорий
 RUN mkdir -p /app/data /var/log/xray
+
+# Включение IP forwarding (будет применено при запуске с NET_ADMIN)
+RUN echo "net.ipv4.ip_forward=1" >> /etc/sysctl.conf
 
 WORKDIR /app
 

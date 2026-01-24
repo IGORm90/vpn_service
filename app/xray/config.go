@@ -92,6 +92,7 @@ func GenerateConfig(users []*database.User, cfg *Config) (*core.Config, error) {
 			},
 		},
 		"routing": map[string]interface{}{
+			"domainStrategy": "AsIs",
 			"rules": []map[string]interface{}{
 				{
 					"type":        "field",
@@ -102,6 +103,11 @@ func GenerateConfig(users []*database.User, cfg *Config) (*core.Config, error) {
 					"type":        "field",
 					"protocol":    []string{"bittorrent"},
 					"outboundTag": "block",
+				},
+				{
+					"type":        "field",
+					"network":     "tcp,udp",
+					"outboundTag": "direct",
 				},
 			},
 		},
@@ -164,11 +170,7 @@ func generateInbounds(users []*database.User, cfg *Config) []map[string]interfac
 				},
 			},
 			"sniffing": map[string]interface{}{
-				"enabled": true,
-				"destOverride": []string{
-					"http",
-					"tls",
-				},
+				"enabled": false,
 			},
 		},
 		{
