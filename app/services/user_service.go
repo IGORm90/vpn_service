@@ -93,11 +93,9 @@ func (s *UserService) CreateUser(dto CreateUserDTO) (*database.User, error) {
 		return nil, fmt.Errorf("%w: %v", ErrCreateUser, err)
 	}
 
-	// Обновляем Xray конфигурацию
-	if err := s.syncXrayUsers(); err != nil {
-		// Логируем ошибку, но не возвращаем её
-		// так как пользователь уже создан в БД
-		fmt.Printf("Warning: failed to sync Xray users: %v\n", err)
+	// Hot-update Xray (fallback to full restart on error)
+	if user.CanConnect() {
+		s.hotAddUserWithFallback(user)
 	}
 
 	return user, nil
@@ -137,6 +135,8 @@ func (s *UserService) UpdateUser(id uint, dto UpdateUserDTO) (*database.User, er
 		return nil, ErrUserNotFound
 	}
 
+	oldCanConnect := user.CanConnect()
+
 	// Обновляем поля если они указаны
 	if dto.TrafficLimit != nil {
 		user.TrafficLimit = *dto.TrafficLimit
@@ -154,23 +154,24 @@ func (s *UserService) UpdateUser(id uint, dto UpdateUserDTO) (*database.User, er
 		return nil, fmt.Errorf("%w: %v", ErrUpdateUser, err)
 	}
 
-	// Обновляем Xray
-	if err := s.syncXrayUsers(); err != nil {
-		fmt.Printf("Warning: failed to sync Xray users: %v\n", err)
-	}
+	s.hotUpdateUserAccess(user, oldCanConnect)
 
 	return user, nil
 }
 
 // DeleteUser удаляет пользователя
 func (s *UserService) DeleteUser(id uint) error {
+	user, err := s.repository.GetUserByID(id)
+	if err != nil {
+		return ErrUserNotFound
+	}
+
 	if err := s.repository.DeleteUser(id); err != nil {
 		return ErrUserNotFound
 	}
 
-	// Обновляем Xray
-	if err := s.syncXrayUsers(); err != nil {
-		fmt.Printf("Warning: failed to sync Xray users: %v\n", err)
+	if user.CanConnect() {
+		s.hotRemoveUserWithFallback(user)
 	}
 
 	return nil
@@ -273,4 +274,36 @@ func (s *UserService) syncXrayUsers() error {
 	}
 
 	return nil
+}
+
+func (s *UserService) hotAddUserWithFallback(user *database.User) {
+	if err := s.xrayManager.AddUserHot(user); err != nil {
+		s.fallbackXraySync("hot-add user", err)
+	}
+}
+
+func (s *UserService) hotRemoveUserWithFallback(user *database.User) {
+	if err := s.xrayManager.RemoveUserHot(user); err != nil {
+		s.fallbackXraySync("hot-remove user", err)
+	}
+}
+
+func (s *UserService) hotUpdateUserAccess(user *database.User, oldCanConnect bool) {
+	newCanConnect := user.CanConnect()
+	if oldCanConnect == newCanConnect {
+		return
+	}
+
+	if newCanConnect {
+		s.hotAddUserWithFallback(user)
+		return
+	}
+	s.hotRemoveUserWithFallback(user)
+}
+
+func (s *UserService) fallbackXraySync(action string, err error) {
+	fmt.Printf("Warning: failed to %s: %v\n", action, err)
+	if err := s.syncXrayUsers(); err != nil {
+		fmt.Printf("Warning: failed to sync Xray users: %v\n", err)
+	}
 }

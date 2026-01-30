@@ -6,6 +6,7 @@ import (
 	"os"
 	"path/filepath"
 	"sync"
+	"time"
 	"vpn-service/database"
 
 	"github.com/xtls/xray-core/core"
@@ -13,11 +14,14 @@ import (
 
 // Manager управляет экземпляром Xray
 type Manager struct {
-	instance *core.Instance
-	config   *Config
-	mu       sync.RWMutex
-	running  bool
+	instance  *core.Instance
+	config    *Config
+	apiClient *APIClient
+	mu        sync.RWMutex
+	running   bool
 }
+
+const errXrayNotRunning = "xray is not running"
 
 // NewManager создает новый менеджер Xray
 func NewManager(config *Config) (*Manager, error) {
@@ -36,9 +40,16 @@ func NewManager(config *Config) (*Manager, error) {
 		return nil, fmt.Errorf("failed to create log directory: %w", err)
 	}
 
+	apiTimeout := time.Duration(config.APITimeoutSeconds) * time.Second
+	if apiTimeout <= 0 {
+		apiTimeout = 3 * time.Second
+	}
+	apiAddress := fmt.Sprintf("127.0.0.1:%d", config.StatsPort)
+
 	return &Manager{
-		config:  config,
-		running: false,
+		config:    config,
+		apiClient: NewAPIClient(apiAddress, config.InboundTag, apiTimeout),
+		running:   false,
 	}, nil
 }
 
@@ -136,6 +147,28 @@ func (m *Manager) UpdateUsers(users []*database.User) error {
 	log.Printf("Updating Xray users (total: %d, active: %d)",
 		len(users), countActiveUsers(users))
 	return m.Restart(users)
+}
+
+// AddUserHot добавляет пользователя через Xray API без перезапуска.
+func (m *Manager) AddUserHot(user *database.User) error {
+	if !m.IsRunning() {
+		return fmt.Errorf(errXrayNotRunning)
+	}
+	if m.apiClient == nil {
+		return fmt.Errorf("xray api client is not initialized")
+	}
+	return m.apiClient.AddUser(user)
+}
+
+// RemoveUserHot удаляет пользователя через Xray API без перезапуска.
+func (m *Manager) RemoveUserHot(user *database.User) error {
+	if !m.IsRunning() {
+		return fmt.Errorf(errXrayNotRunning)
+	}
+	if m.apiClient == nil {
+		return fmt.Errorf("xray api client is not initialized")
+	}
+	return m.apiClient.RemoveUser(user)
 }
 
 // AddUser добавляет пользователя (перезапускает сервер)

@@ -23,6 +23,8 @@ type Config struct {
 	AccessLogPath      string
 	ErrorLogPath       string
 	StatsPort          int
+	InboundTag         string
+	APITimeoutSeconds  int
 }
 
 // DefaultConfig возвращает конфигурацию по умолчанию
@@ -39,6 +41,8 @@ func DefaultConfig() *Config {
 		AccessLogPath:      "/var/log/xray/access.log",
 		ErrorLogPath:       "/var/log/xray/error.log",
 		StatsPort:          10085,
+		InboundTag:         "vless-in",
+		APITimeoutSeconds:  3,
 	}
 }
 
@@ -152,7 +156,7 @@ func generateInbounds(users []*database.User, cfg *Config) []map[string]interfac
 		{
 			"port":     cfg.Port,
 			"protocol": "vless",
-			"tag":      "vless-in",
+			"tag":      cfg.InboundTag,
 			"settings": map[string]interface{}{
 				"clients":    clients,
 				"decryption": "none",

@@ -65,6 +65,8 @@ func main() {
 		AccessLogPath:      logPath,
 		ErrorLogPath:       getEnv("XRAY_ERROR_LOG", "/var/log/xray/error.log"),
 		StatsPort:          10085,
+		InboundTag:         "vless-in",
+		APITimeoutSeconds:  3,
 	}
 
 	// Создание менеджера Xray
