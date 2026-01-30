@@ -159,6 +159,8 @@ services:
     image: grafana/promtail:2.9.0
     container_name: promtail
     restart: unless-stopped
+    environment:
+      - DOCKER_API_VERSION=1.44
     volumes:
       - ./promtail/promtail-config.yml:/etc/promtail/config.yml:ro
       - /var/run/docker.sock:/var/run/docker.sock:ro
