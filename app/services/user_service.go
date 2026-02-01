@@ -68,19 +68,20 @@ type UserConfigResponse struct {
 	IsActive     bool   `json:"is_active"`
 }
 
-// CreateUser создает нового пользователя
+// CreateUser создает нового пользователя или возвращает существующего
 func (s *UserService) CreateUser(dto CreateUserDTO) (*database.User, error) {
 	// Валидация
 	if dto.Username == "" {
 		return nil, ErrInvalidUsername
 	}
 
-	// Проверяем уникальность
-	if _, err := s.repository.GetUserByUsername(dto.Username); err == nil {
-		return nil, ErrUsernameExists
+	// Проверяем существование пользователя
+	if existingUser, err := s.repository.GetUserByUsername(dto.Username); err == nil {
+		// Пользователь уже существует - возвращаем его
+		return existingUser, nil
 	}
 
-	// Создаем пользователя
+	// Создаем нового пользователя
 	user := &database.User{
 		Username:     dto.Username,
 		UUID:         utils.GenerateUUID(),

@@ -56,8 +56,6 @@ func (c *UserController) CreateUser(w http.ResponseWriter, r *http.Request) {
 		switch err {
 		case services.ErrInvalidUsername:
 			responses.SendBadRequest(w, "Username is required")
-		case services.ErrUsernameExists:
-			responses.SendBadRequest(w, "Username already exists")
 		default:
 			responses.SendInternalError(w, "Failed to create user")
 		}
