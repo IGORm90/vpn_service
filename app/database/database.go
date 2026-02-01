@@ -40,7 +40,7 @@ func InitDatabase(dbPath string) error {
 	}
 
 	// Автоматическая миграция схемы
-	if err := db.AutoMigrate(&User{}); err != nil {
+	if err := db.AutoMigrate(&User{}, &UserDevice{}); err != nil {
 		return fmt.Errorf("failed to migrate database: %w", err)
 	}
 

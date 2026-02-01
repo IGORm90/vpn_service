@@ -5,6 +5,7 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
+	"strconv"
 	"syscall"
 	"time"
 	"vpn-service/api"
@@ -38,6 +39,7 @@ func main() {
 	logPath := getEnv("LOG_PATH", "/var/log/xray/access.log")
 	serverPort := getEnv("SERVER_PORT", "8080")
 	xrayPrivateKey := getEnv("XRAY_PRIVATE_KEY", "")
+	maxDevices := getEnvInt("MAX_DEVICES", 5)
 
 	if xrayPrivateKey == "" {
 		log.Fatal("XRAY_PRIVATE_KEY environment variable is required")
@@ -99,7 +101,7 @@ func main() {
 
 	// Запуск мониторинга логов
 	log.Println("Starting log monitor...")
-	logMonitor := monitoring.NewLogMonitor(logPath, repo, 30*time.Second)
+	logMonitor := monitoring.NewLogMonitor(logPath, repo, 30*time.Second, maxDevices, xrayManager)
 	if err := logMonitor.Start(); err != nil {
 		log.Printf("Warning: failed to start log monitor: %v", err)
 	}
@@ -167,4 +169,16 @@ func getEnv(key, defaultValue string) string {
 		return defaultValue
 	}
 	return value
+}
+
+func getEnvInt(key string, defaultValue int) int {
+	value := os.Getenv(key)
+	if value == "" {
+		return defaultValue
+	}
+	parsed, err := strconv.Atoi(value)
+	if err != nil {
+		return defaultValue
+	}
+	return parsed
 }

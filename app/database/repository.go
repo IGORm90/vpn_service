@@ -1,6 +1,7 @@
 package database
 
 import (
+	"errors"
 	"fmt"
 	"time"
 
@@ -11,6 +12,8 @@ import (
 type Repository struct {
 	db *gorm.DB
 }
+
+var ErrDeviceLimitExceeded = errors.New("device limit exceeded")
 
 // NewRepository создает новый экземпляр репозитория
 func NewRepository(db *gorm.DB) *Repository {
@@ -187,6 +190,48 @@ func (r *Repository) ResetTraffic(id uint) error {
 	}
 
 	return nil
+}
+
+// RecordUserDevice сохраняет информацию об устройстве пользователя по IP.
+// Возвращает true если устройство новое.
+func (r *Repository) RecordUserDevice(userID uint, ip string, maxDevices int) (bool, error) {
+	if maxDevices <= 0 {
+		return false, nil
+	}
+	if ip == "" || userID == 0 {
+		return false, fmt.Errorf("invalid device params")
+	}
+
+	var existing UserDevice
+	if err := r.db.Where("user_id = ? AND ip = ?", userID, ip).First(&existing).Error; err == nil {
+		return false, r.db.Model(&UserDevice{}).
+			Where("id = ?", existing.ID).
+			Update("last_seen", time.Now()).Error
+	} else if err != gorm.ErrRecordNotFound {
+		return false, fmt.Errorf("failed to query device: %w", err)
+	}
+
+	var count int64
+	if err := r.db.Model(&UserDevice{}).
+		Where("user_id = ?", userID).
+		Count(&count).Error; err != nil {
+		return false, fmt.Errorf("failed to count devices: %w", err)
+	}
+
+	if int(count) >= maxDevices {
+		return false, ErrDeviceLimitExceeded
+	}
+
+	device := &UserDevice{
+		UserID:   userID,
+		IP:       ip,
+		LastSeen: time.Now(),
+	}
+	if err := r.db.Create(device).Error; err != nil {
+		return false, fmt.Errorf("failed to create device: %w", err)
+	}
+
+	return true, nil
 }
 
 // CountUsers возвращает общее количество пользователей

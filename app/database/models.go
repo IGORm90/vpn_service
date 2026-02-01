@@ -18,6 +18,16 @@ type User struct {
 	UpdatedAt    time.Time `json:"updated_at"`
 }
 
+// UserDevice представляет устройство пользователя (по IP)
+type UserDevice struct {
+	ID        uint      `gorm:"primaryKey" json:"id"`
+	UserID    uint      `gorm:"index;uniqueIndex:idx_user_ip;not null" json:"user_id"`
+	IP        string    `gorm:"size:64;uniqueIndex:idx_user_ip;not null" json:"ip"`
+	LastSeen  time.Time `gorm:"index" json:"last_seen"`
+	CreatedAt time.Time `json:"created_at"`
+	UpdatedAt time.Time `json:"updated_at"`
+}
+
 // IsExpired проверяет, истек ли срок действия пользователя
 func (u *User) IsExpired() bool {
 	return !u.ExpiresAt.IsZero() && time.Now().After(u.ExpiresAt)

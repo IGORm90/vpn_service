@@ -5,12 +5,14 @@ import (
 	"encoding/json"
 	"fmt"
 	"log"
+	"net"
 	"os"
 	"path/filepath"
 	"strings"
 	"sync"
 	"time"
 	"vpn-service/database"
+	"vpn-service/xray"
 
 	"github.com/nxadm/tail"
 )
@@ -40,24 +42,34 @@ type TrafficStats struct {
 
 // LogMonitor мониторит логи Xray и обновляет статистику
 type LogMonitor struct {
-	logPath    string
-	repository *database.Repository
-	stats      map[string]*TrafficStats
-	mu         sync.RWMutex
-	interval   time.Duration
-	stopCh     chan struct{}
-	running    bool
+	logPath     string
+	repository  *database.Repository
+	stats       map[string]*TrafficStats
+	mu          sync.RWMutex
+	interval    time.Duration
+	stopCh      chan struct{}
+	running     bool
+	maxDevices  int
+	xrayManager *xray.Manager
 }
 
 // NewLogMonitor создает новый монитор логов
-func NewLogMonitor(logPath string, repo *database.Repository, updateInterval time.Duration) *LogMonitor {
+func NewLogMonitor(
+	logPath string,
+	repo *database.Repository,
+	updateInterval time.Duration,
+	maxDevices int,
+	xrayManager *xray.Manager,
+) *LogMonitor {
 	return &LogMonitor{
-		logPath:    logPath,
-		repository: repo,
-		stats:      make(map[string]*TrafficStats),
-		interval:   updateInterval,
-		stopCh:     make(chan struct{}),
-		running:    false,
+		logPath:     logPath,
+		repository:  repo,
+		stats:       make(map[string]*TrafficStats),
+		interval:    updateInterval,
+		stopCh:      make(chan struct{}),
+		running:     false,
+		maxDevices:  maxDevices,
+		xrayManager: xrayManager,
 	}
 }
 
@@ -153,6 +165,7 @@ func (m *LogMonitor) processLogLine(line string) {
 
 	// Обновляем статистику
 	m.updateStats(entry.Email, entry.UUID, entry.Upload, entry.Download)
+	m.enforceDeviceLimit(entry)
 }
 
 // parseTextLog парсит текстовый лог (fallback)
@@ -172,6 +185,72 @@ func (m *LogMonitor) parseTextLog(line string) {
 			}
 		}
 	}
+}
+
+func (m *LogMonitor) enforceDeviceLimit(entry LogEntry) {
+	if m.maxDevices <= 0 {
+		return
+	}
+
+	ip := extractIP(entry.Source)
+	if ip == "" {
+		return
+	}
+
+	user, err := m.findUser(entry)
+	if err != nil || user == nil || !user.IsActive {
+		return
+	}
+
+	_, err = m.repository.RecordUserDevice(user.ID, ip, m.maxDevices)
+	if err == nil {
+		return
+	}
+	if err != database.ErrDeviceLimitExceeded {
+		log.Printf("Failed to record device for user %s: %v", user.Username, err)
+		return
+	}
+
+	log.Printf("Device limit exceeded for user %s (ip: %s), disabling access", user.Username, ip)
+	user.IsActive = false
+	if err := m.repository.UpdateUser(user); err != nil {
+		log.Printf("Failed to deactivate user %s after device limit: %v", user.Username, err)
+		return
+	}
+
+	if m.xrayManager != nil && m.xrayManager.IsRunning() {
+		if err := m.xrayManager.RemoveUserHot(user); err != nil {
+			log.Printf("Failed to remove user %s from Xray: %v", user.Username, err)
+		}
+	}
+}
+
+func (m *LogMonitor) findUser(entry LogEntry) (*database.User, error) {
+	if entry.UUID != "" {
+		if user, err := m.repository.GetUserByUUID(entry.UUID); err == nil {
+			return user, nil
+		}
+	}
+	if entry.Email == "" {
+		return nil, fmt.Errorf("missing user identifiers")
+	}
+	return m.repository.GetUserByUsername(entry.Email)
+}
+
+func extractIP(source string) string {
+	source = strings.TrimSpace(source)
+	if source == "" {
+		return ""
+	}
+	if strings.HasPrefix(source, "[") {
+		if idx := strings.Index(source, "]"); idx != -1 {
+			return source[1:idx]
+		}
+	}
+	if host, _, err := net.SplitHostPort(source); err == nil {
+		return host
+	}
+	return source
 }
 
 // updateStats обновляет статистику трафика
