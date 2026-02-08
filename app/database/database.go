@@ -45,7 +45,6 @@ func InitDatabase(dbPath string) error {
 	}
 
 	DB = db
-	log.Printf("Database initialized successfully at %s", dbPath)
 	return nil
 }
 
@@ -64,7 +63,6 @@ func CloseDatabase() error {
 		return fmt.Errorf("failed to close database: %w", err)
 	}
 
-	log.Println("Database connection closed")
 	return nil
 }
 

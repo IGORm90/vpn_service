@@ -12,13 +12,9 @@ import (
 type Metrics struct {
 	ActiveUsers      prometheus.Gauge
 	TotalUsers       prometheus.Gauge
-	ExpiredUsers     prometheus.Gauge
-	UsersOverLimit   prometheus.Gauge
 	TotalTraffic     *prometheus.CounterVec
-	UserTraffic      *prometheus.GaugeVec
 	ConnectionsTotal prometheus.Counter
 	ConnectionActive prometheus.Gauge
-	UserLimitRemain  *prometheus.GaugeVec
 }
 
 // NewMetrics создает и регистрирует метрики
@@ -26,19 +22,11 @@ func NewMetrics() *Metrics {
 	m := &Metrics{
 		ActiveUsers: prometheus.NewGauge(prometheus.GaugeOpts{
 			Name: "vpn_active_users_total",
-			Help: "Number of active VPN users (not expired, not over limit)",
+			Help: "Number of active VPN users",
 		}),
 		TotalUsers: prometheus.NewGauge(prometheus.GaugeOpts{
 			Name: "vpn_total_users",
 			Help: "Total number of VPN users",
-		}),
-		ExpiredUsers: prometheus.NewGauge(prometheus.GaugeOpts{
-			Name: "vpn_expired_users",
-			Help: "Number of users with expired subscriptions",
-		}),
-		UsersOverLimit: prometheus.NewGauge(prometheus.GaugeOpts{
-			Name: "vpn_users_over_limit",
-			Help: "Number of users over traffic limit",
 		}),
 		TotalTraffic: prometheus.NewCounterVec(
 			prometheus.CounterOpts{
@@ -46,13 +34,6 @@ func NewMetrics() *Metrics {
 				Help: "Total traffic in bytes",
 			},
 			[]string{"direction"},
-		),
-		UserTraffic: prometheus.NewGaugeVec(
-			prometheus.GaugeOpts{
-				Name: "vpn_user_traffic_bytes",
-				Help: "Traffic usage per user in bytes",
-			},
-			[]string{"username", "uuid", "direction"},
 		),
 		ConnectionsTotal: prometheus.NewCounter(prometheus.CounterOpts{
 			Name: "vpn_connections_total",
@@ -62,25 +43,14 @@ func NewMetrics() *Metrics {
 			Name: "vpn_connections_active",
 			Help: "Number of active VPN connections",
 		}),
-		UserLimitRemain: prometheus.NewGaugeVec(
-			prometheus.GaugeOpts{
-				Name: "vpn_user_limit_remaining_bytes",
-				Help: "Remaining traffic limit for user in bytes",
-			},
-			[]string{"username", "uuid"},
-		),
 	}
 
 	// Регистрируем все метрики
 	prometheus.MustRegister(m.ActiveUsers)
 	prometheus.MustRegister(m.TotalUsers)
-	prometheus.MustRegister(m.ExpiredUsers)
-	prometheus.MustRegister(m.UsersOverLimit)
 	prometheus.MustRegister(m.TotalTraffic)
-	prometheus.MustRegister(m.UserTraffic)
 	prometheus.MustRegister(m.ConnectionsTotal)
 	prometheus.MustRegister(m.ConnectionActive)
-	prometheus.MustRegister(m.UserLimitRemain)
 
 	return m
 }
@@ -128,7 +98,6 @@ func (c *MetricsCollector) Start(interval time.Duration) {
 		}
 	}()
 
-	log.Printf("Metrics collector started (interval: %v)", interval)
 }
 
 // Stop останавливает сбор метрик
@@ -139,7 +108,6 @@ func (c *MetricsCollector) Stop() {
 
 	close(c.stopCh)
 	c.running = false
-	log.Println("Metrics collector stopped")
 }
 
 // collectMetrics собирает все метрики из БД
@@ -158,57 +126,6 @@ func (c *MetricsCollector) collectMetrics() {
 	} else {
 		c.metrics.ActiveUsers.Set(float64(activeUsers))
 	}
-
-	expiredUsers, err := c.repository.CountExpiredUsers()
-	if err != nil {
-		log.Printf("Failed to count expired users: %v", err)
-	} else {
-		c.metrics.ExpiredUsers.Set(float64(expiredUsers))
-	}
-
-	overLimitUsers, err := c.repository.CountUsersOverLimit()
-	if err != nil {
-		log.Printf("Failed to count users over limit: %v", err)
-	} else {
-		c.metrics.UsersOverLimit.Set(float64(overLimitUsers))
-	}
-
-	// Собираем метрики по каждому пользователю
-	users, err := c.repository.ListUsers()
-	if err != nil {
-		log.Printf("Failed to list users: %v", err)
-		return
-	}
-
-	var totalUpload, totalDownload int64
-	for _, user := range users {
-		// Предполагаем что трафик примерно 50/50 upload/download
-		// В реальности нужно хранить отдельно
-		upload := user.TrafficUsed / 2
-		download := user.TrafficUsed / 2
-
-		c.metrics.UserTraffic.WithLabelValues(
-			user.Username, user.UUID, "upload",
-		).Set(float64(upload))
-
-		c.metrics.UserTraffic.WithLabelValues(
-			user.Username, user.UUID, "download",
-		).Set(float64(download))
-
-		// Остаток лимита
-		remaining := user.RemainingTraffic()
-		if remaining >= 0 {
-			c.metrics.UserLimitRemain.WithLabelValues(
-				user.Username, user.UUID,
-			).Set(float64(remaining))
-		}
-
-		totalUpload += upload
-		totalDownload += download
-	}
-
-	// Обновляем общий трафик (используем Add только для новых данных)
-	// Здесь используем Set через Gauge если нужно точное значение
 }
 
 // UpdateConnection обновляет метрики подключений

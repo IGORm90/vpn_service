@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"net/http"
 	"strconv"
-	"time"
 	"vpn-service/responses"
 	"vpn-service/services"
 
@@ -25,16 +24,13 @@ func NewUserController(userService *services.UserService) *UserController {
 
 // CreateUserRequest представляет запрос на создание пользователя
 type CreateUserRequest struct {
-	Username     string    `json:"username"`
-	TrafficLimit int64     `json:"traffic_limit,omitempty"`
-	ExpiresAt    time.Time `json:"expires_at,omitempty"`
+	ID       int64  `json:"id"`
+	Username string `json:"username"`
 }
 
 // UpdateUserRequest представляет запрос на обновление пользователя
 type UpdateUserRequest struct {
-	TrafficLimit *int64     `json:"traffic_limit,omitempty"`
-	ExpiresAt    *time.Time `json:"expires_at,omitempty"`
-	IsActive     *bool      `json:"is_active,omitempty"`
+	IsActive *bool `json:"is_active,omitempty"`
 }
 
 // CreateUser создает нового пользователя
@@ -46,9 +42,8 @@ func (c *UserController) CreateUser(w http.ResponseWriter, r *http.Request) {
 	}
 
 	dto := services.CreateUserDTO{
-		Username:     req.Username,
-		TrafficLimit: req.TrafficLimit,
-		ExpiresAt:    req.ExpiresAt,
+		ID:       req.ID,
+		Username: req.Username,
 	}
 
 	user, err := c.userService.CreateUser(dto)
@@ -84,13 +79,13 @@ func (c *UserController) GetUser(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	idStr := vars["id"]
 
-	id, err := strconv.ParseUint(idStr, 10, 32)
+	id, err := strconv.ParseInt(idStr, 10, 64)
 	if err != nil {
 		responses.SendBadRequest(w, "Invalid user ID")
 		return
 	}
 
-	user, err := c.userService.GetUser(uint(id))
+	user, err := c.userService.GetUser(id)
 	if err != nil {
 		if err == services.ErrUserNotFound {
 			responses.SendNotFound(w, "User not found")
@@ -108,7 +103,7 @@ func (c *UserController) UpdateUser(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	idStr := vars["id"]
 
-	id, err := strconv.ParseUint(idStr, 10, 32)
+	id, err := strconv.ParseInt(idStr, 10, 64)
 	if err != nil {
 		responses.SendBadRequest(w, "Invalid user ID")
 		return
@@ -121,12 +116,10 @@ func (c *UserController) UpdateUser(w http.ResponseWriter, r *http.Request) {
 	}
 
 	dto := services.UpdateUserDTO{
-		TrafficLimit: req.TrafficLimit,
-		ExpiresAt:    req.ExpiresAt,
-		IsActive:     req.IsActive,
+		IsActive: req.IsActive,
 	}
 
-	user, err := c.userService.UpdateUser(uint(id), dto)
+	user, err := c.userService.UpdateUser(id, dto)
 	if err != nil {
 		switch err {
 		case services.ErrUserNotFound:
@@ -145,13 +138,13 @@ func (c *UserController) DeleteUser(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	idStr := vars["id"]
 
-	id, err := strconv.ParseUint(idStr, 10, 32)
+	id, err := strconv.ParseInt(idStr, 10, 64)
 	if err != nil {
 		responses.SendBadRequest(w, "Invalid user ID")
 		return
 	}
 
-	if err := c.userService.DeleteUser(uint(id)); err != nil {
+	if err := c.userService.DeleteUser(id); err != nil {
 		if err == services.ErrUserNotFound {
 			responses.SendNotFound(w, "User not found")
 		} else {
@@ -170,13 +163,13 @@ func (c *UserController) GetUserConfig(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	idStr := vars["id"]
 
-	id, err := strconv.ParseUint(idStr, 10, 32)
+	id, err := strconv.ParseInt(idStr, 10, 64)
 	if err != nil {
 		responses.SendBadRequest(w, "Invalid user ID")
 		return
 	}
 
-	config, err := c.userService.GetUserConfig(uint(id))
+	config, err := c.userService.GetUserConfig(id)
 	if err != nil {
 		if err == services.ErrUserNotFound {
 			responses.SendNotFound(w, "User not found")
@@ -187,25 +180,4 @@ func (c *UserController) GetUserConfig(w http.ResponseWriter, r *http.Request) {
 	}
 
 	responses.SendSuccess(w, config)
-}
-
-// ResetTraffic сбрасывает счетчик трафика пользователя
-func (c *UserController) ResetTraffic(w http.ResponseWriter, r *http.Request) {
-	vars := mux.Vars(r)
-	idStr := vars["id"]
-
-	id, err := strconv.ParseUint(idStr, 10, 32)
-	if err != nil {
-		responses.SendBadRequest(w, "Invalid user ID")
-		return
-	}
-
-	if err := c.userService.ResetUserTraffic(uint(id)); err != nil {
-		responses.SendNotFound(w, "User not found")
-		return
-	}
-
-	responses.SendSuccess(w, map[string]string{
-		"message": "Traffic reset successfully",
-	})
 }

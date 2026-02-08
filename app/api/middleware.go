@@ -80,11 +80,13 @@ func ContentTypeMiddleware(next http.Handler) http.Handler {
 
 // AuthMiddleware проверяет Bearer токен в заголовке Authorization
 func AuthMiddleware(next http.Handler) http.Handler {
+	expectedToken := os.Getenv("API_BEARER_TOKEN")
+	if expectedToken == "" {
+		log.Println("Warning: API_BEARER_TOKEN is not set, authentication disabled")
+	}
+
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		// Получаем токен из переменной окружения
-		expectedToken := os.Getenv("API_BEARER_TOKEN")
 		if expectedToken == "" {
-			log.Println("Warning: API_BEARER_TOKEN is not set, authentication disabled")
 			next.ServeHTTP(w, r)
 			return
 		}

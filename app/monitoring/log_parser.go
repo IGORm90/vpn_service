@@ -100,7 +100,6 @@ func (m *LogMonitor) Start() error {
 	// Запускаем периодическое обновление БД
 	go m.periodicUpdate()
 
-	log.Printf("Log monitor started, watching: %s", m.logPath)
 	return nil
 }
 
@@ -118,8 +117,6 @@ func (m *LogMonitor) Stop() {
 
 	// Финальное обновление статистики в БД
 	m.flushStats()
-
-	log.Println("Log monitor stopped")
 }
 
 // tailLogs читает логи в реальном времени
@@ -324,41 +321,15 @@ func (m *LogMonitor) flushStats() {
 	}
 	m.mu.RUnlock()
 
-	for key, stat := range statsCopy {
+	for _, stat := range statsCopy {
 		stat.mu.Lock()
 		upload := stat.Upload
 		download := stat.Download
-		uuid := stat.UUID
-		email := stat.Email
 		stat.mu.Unlock()
 
 		if upload == 0 && download == 0 {
 			continue
 		}
-
-		// Находим пользователя по UUID или email
-		var user *database.User
-		var err error
-
-		if uuid != "" {
-			user, err = m.repository.GetUserByUUID(uuid)
-		} else if email != "" {
-			user, err = m.repository.GetUserByUsername(email)
-		}
-
-		if err != nil {
-			log.Printf("Failed to find user %s: %v", key, err)
-			continue
-		}
-
-		// Обновляем трафик в БД
-		if err := m.repository.UpdateTrafficUsage(user.UUID, upload, download); err != nil {
-			log.Printf("Failed to update traffic for user %s: %v", user.Username, err)
-			continue
-		}
-
-		log.Printf("Updated traffic for user %s: +%d up, +%d down (total: %d)",
-			user.Username, upload, download, user.TrafficUsed+upload+download)
 
 		// Сбрасываем локальные счетчики
 		stat.mu.Lock()

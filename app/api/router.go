@@ -28,7 +28,6 @@ func SetupRouter(mainController *controllers.MainController, userController *con
 	apiRouter.HandleFunc("/users/{id}", userController.UpdateUser).Methods("PATCH", "PUT")
 	apiRouter.HandleFunc("/users/{id}", userController.DeleteUser).Methods("DELETE")
 	apiRouter.HandleFunc("/users/{id}/config", userController.GetUserConfig).Methods("GET")
-	apiRouter.HandleFunc("/users/{id}/reset-traffic", userController.ResetTraffic).Methods("POST")
 
 	// System - используем main контроллер для системных endpoints
 	router.HandleFunc("/health", mainController.HealthCheck).Methods("GET")

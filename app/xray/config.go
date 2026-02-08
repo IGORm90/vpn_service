@@ -39,7 +39,7 @@ func DefaultConfig() *Config {
 		XHTTPPath:          "/xhttp",
 		LogLevel:           "info",
 		AccessLogPath:      "/var/log/xray/access.log",
-		ErrorLogPath:       "/var/log/xray/error.log",
+		ErrorLogPath:       "stderr",
 		StatsPort:          10085,
 		InboundTag:         "vless-in",
 		APITimeoutSeconds:  3,

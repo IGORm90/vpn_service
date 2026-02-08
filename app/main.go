@@ -32,7 +32,7 @@ import (
 )
 
 func main() {
-	log.Println("Starting VPN Service with embedded Xray...")
+	log.Println("Starting VPN Service...")
 
 	// Конфигурация из переменных окружения
 	dbPath := getEnv("DB_PATH", "./data/vpn.db")
@@ -46,7 +46,6 @@ func main() {
 	}
 
 	// Инициализация базы данных
-	log.Println("Initializing database...")
 	if err := database.InitDatabase(dbPath); err != nil {
 		log.Fatalf("Failed to initialize database: %v", err)
 	}
@@ -65,21 +64,19 @@ func main() {
 		XHTTPPath:          getEnv("XRAY_XHTTP_PATH", "/xhttp"),
 		LogLevel:           getEnv("XRAY_LOG_LEVEL", "info"),
 		AccessLogPath:      logPath,
-		ErrorLogPath:       getEnv("XRAY_ERROR_LOG", "/var/log/xray/error.log"),
+		ErrorLogPath:       getEnv("XRAY_ERROR_LOG", "stderr"),
 		StatsPort:          10085,
 		InboundTag:         "vless-in",
 		APITimeoutSeconds:  3,
 	}
 
 	// Создание менеджера Xray
-	log.Println("Initializing Xray manager...")
 	xrayManager, err := xray.NewManager(xrayConfig)
 	if err != nil {
 		log.Fatalf("Failed to create Xray manager: %v", err)
 	}
 
 	// Загружаем пользователей и запускаем Xray
-	log.Println("Starting Xray server...")
 	users, err := repo.ListUsers()
 	if err != nil {
 		log.Fatalf("Failed to load users: %v", err)
@@ -90,17 +87,13 @@ func main() {
 	}
 	defer xrayManager.Stop()
 
-	log.Printf("Xray started with %d users", len(users))
-
 	// Инициализация метрик Prometheus
-	log.Println("Initializing Prometheus metrics...")
 	metrics := monitoring.NewMetrics()
 	metricsCollector := monitoring.NewMetricsCollector(metrics, repo)
 	metricsCollector.Start(15 * time.Second)
 	defer metricsCollector.Stop()
 
 	// Запуск мониторинга логов
-	log.Println("Starting log monitor...")
 	logMonitor := monitoring.NewLogMonitor(logPath, repo, 30*time.Second, maxDevices, xrayManager)
 	if err := logMonitor.Start(); err != nil {
 		log.Printf("Warning: failed to start log monitor: %v", err)
@@ -130,18 +123,6 @@ func main() {
 	// Graceful shutdown
 	go func() {
 		log.Printf("HTTP server listening on port %s", serverPort)
-		log.Printf("API documentation:")
-		log.Printf("  - POST   /api/users                  - Create user")
-		log.Printf("  - GET    /api/users                  - List users")
-		log.Printf("  - GET    /api/users/{id}             - Get user")
-		log.Printf("  - PATCH  /api/users/{id}             - Update user")
-		log.Printf("  - DELETE /api/users/{id}             - Delete user")
-		log.Printf("  - GET    /api/users/{id}/config      - Get client config")
-		log.Printf("  - POST   /api/users/{id}/reset-traffic - Reset traffic")
-		log.Printf("  - GET    /health                     - Health check")
-		log.Printf("  - GET    /stats                      - Service stats")
-		log.Printf("  - GET    /metrics                    - Prometheus metrics")
-
 		if err := server.ListenAndServe(); err != nil && err != http.ErrServerClosed {
 			log.Fatalf("Failed to start HTTP server: %v", err)
 		}

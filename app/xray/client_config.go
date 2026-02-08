@@ -130,15 +130,12 @@ func GenerateClashConfig(user *database.User, cfg *Config, serverIP string) (str
 
 // ClientConfigResponse представляет ответ с конфигурациями клиента
 type ClientConfigResponse struct {
-	Username     string `json:"username"`
-	UUID         string `json:"uuid"`
-	ServerIP     string `json:"server_ip"`
-	ServerPort   int    `json:"server_port"`
-	JSON         string `json:"config_json"`
-	URI          string `json:"vless_uri"`
-	QRCode       string `json:"qr_code,omitempty"`
-	ExpiresAt    string `json:"expires_at"`
-	TrafficLimit int64  `json:"traffic_limit"`
-	TrafficUsed  int64  `json:"traffic_used"`
-	IsActive     bool   `json:"is_active"`
+	Username   string `json:"username"`
+	UUID       string `json:"uuid"`
+	ServerIP   string `json:"server_ip"`
+	ServerPort int    `json:"server_port"`
+	JSON       string `json:"config_json"`
+	URI        string `json:"vless_uri"`
+	QRCode     string `json:"qr_code,omitempty"`
+	IsActive   bool   `json:"is_active"`
 }

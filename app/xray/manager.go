@@ -2,7 +2,6 @@ package xray
 
 import (
 	"fmt"
-	"log"
 	"os"
 	"path/filepath"
 	"sync"
@@ -81,8 +80,6 @@ func (m *Manager) Start(users []*database.User) error {
 
 	m.instance = instance
 	m.running = true
-
-	log.Printf("Xray started successfully on port %d", m.config.Port)
 	return nil
 }
 
@@ -103,15 +100,11 @@ func (m *Manager) Stop() error {
 
 	m.instance = nil
 	m.running = false
-
-	log.Println("Xray stopped successfully")
 	return nil
 }
 
 // Restart перезапускает Xray с новым списком пользователей
 func (m *Manager) Restart(users []*database.User) error {
-	log.Println("Restarting Xray...")
-
 	// Останавливаем если запущен
 	if m.IsRunning() {
 		if err := m.Stop(); err != nil {
@@ -124,7 +117,6 @@ func (m *Manager) Restart(users []*database.User) error {
 		return fmt.Errorf("failed to start xray: %w", err)
 	}
 
-	log.Println("Xray restarted successfully")
 	return nil
 }
 
@@ -144,8 +136,6 @@ func (m *Manager) GetConfig() *Config {
 
 // UpdateUsers обновляет список пользователей (перезапускает сервер)
 func (m *Manager) UpdateUsers(users []*database.User) error {
-	log.Printf("Updating Xray users (total: %d, active: %d)",
-		len(users), countActiveUsers(users))
 	return m.Restart(users)
 }
 
@@ -173,13 +163,11 @@ func (m *Manager) RemoveUserHot(user *database.User) error {
 
 // AddUser добавляет пользователя (перезапускает сервер)
 func (m *Manager) AddUser(users []*database.User) error {
-	log.Printf("Adding user to Xray, total users: %d", len(users))
 	return m.Restart(users)
 }
 
 // RemoveUser удаляет пользователя (перезапускает сервер)
 func (m *Manager) RemoveUser(users []*database.User) error {
-	log.Printf("Removing user from Xray, remaining users: %d", len(users))
 	return m.Restart(users)
 }
 

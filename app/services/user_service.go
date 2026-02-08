@@ -41,31 +41,25 @@ func NewUserService(repo *database.Repository, xrayMgr *xray.Manager, xrayCfg *x
 
 // CreateUserDTO структура для создания пользователя
 type CreateUserDTO struct {
-	Username     string
-	TrafficLimit int64
-	ExpiresAt    time.Time
+	ID       int64
+	Username string
 }
 
 // UpdateUserDTO структура для обновления пользователя
 type UpdateUserDTO struct {
-	TrafficLimit *int64
-	ExpiresAt    *time.Time
-	IsActive     *bool
+	IsActive *bool
 }
 
 // UserConfigResponse структура ответа с конфигурацией пользователя
 type UserConfigResponse struct {
-	Username     string `json:"username"`
-	UUID         string `json:"uuid"`
-	ServerIP     string `json:"server_ip"`
-	ServerPort   int    `json:"server_port"`
-	JSON         string `json:"json"`
-	URI          string `json:"uri"`
-	QRCode       string `json:"qr_code"`
-	ExpiresAt    string `json:"expires_at"`
-	TrafficLimit int64  `json:"traffic_limit"`
-	TrafficUsed  int64  `json:"traffic_used"`
-	IsActive     bool   `json:"is_active"`
+	Username   string `json:"username"`
+	UUID       string `json:"uuid"`
+	ServerIP   string `json:"server_ip"`
+	ServerPort int    `json:"server_port"`
+	JSON       string `json:"json"`
+	URI        string `json:"uri"`
+	QRCode     string `json:"qr_code"`
+	IsActive   bool   `json:"is_active"`
 }
 
 // CreateUser создает нового пользователя или возвращает существующего
@@ -73,6 +67,9 @@ func (s *UserService) CreateUser(dto CreateUserDTO) (*database.User, error) {
 	// Валидация
 	if dto.Username == "" {
 		return nil, ErrInvalidUsername
+	}
+	if dto.ID == 0 {
+		return nil, ErrInvalidUserID
 	}
 
 	// Проверяем существование пользователя
@@ -83,11 +80,10 @@ func (s *UserService) CreateUser(dto CreateUserDTO) (*database.User, error) {
 
 	// Создаем нового пользователя
 	user := &database.User{
-		Username:     dto.Username,
-		UUID:         utils.GenerateUUID(),
-		IsActive:     true,
-		TrafficLimit: dto.TrafficLimit,
-		ExpiresAt:    dto.ExpiresAt,
+		ID:       dto.ID,
+		Username: dto.Username,
+		UUID:     utils.GenerateUUID(),
+		IsActive: true,
 	}
 
 	if err := s.repository.CreateUser(user); err != nil {
@@ -121,7 +117,7 @@ func (s *UserService) ListUsers(activeOnly bool) ([]*database.User, error) {
 }
 
 // GetUser возвращает пользователя по ID
-func (s *UserService) GetUser(id uint) (*database.User, error) {
+func (s *UserService) GetUser(id int64) (*database.User, error) {
 	user, err := s.repository.GetUserByID(id)
 	if err != nil {
 		return nil, ErrUserNotFound
@@ -130,7 +126,7 @@ func (s *UserService) GetUser(id uint) (*database.User, error) {
 }
 
 // UpdateUser обновляет данные пользователя
-func (s *UserService) UpdateUser(id uint, dto UpdateUserDTO) (*database.User, error) {
+func (s *UserService) UpdateUser(id int64, dto UpdateUserDTO) (*database.User, error) {
 	user, err := s.repository.GetUserByID(id)
 	if err != nil {
 		return nil, ErrUserNotFound
@@ -139,14 +135,6 @@ func (s *UserService) UpdateUser(id uint, dto UpdateUserDTO) (*database.User, er
 	oldCanConnect := user.CanConnect()
 
 	// Обновляем поля если они указаны
-	if dto.TrafficLimit != nil {
-		user.TrafficLimit = *dto.TrafficLimit
-	}
-
-	if dto.ExpiresAt != nil {
-		user.ExpiresAt = *dto.ExpiresAt
-	}
-
 	if dto.IsActive != nil {
 		user.IsActive = *dto.IsActive
 	}
@@ -161,7 +149,7 @@ func (s *UserService) UpdateUser(id uint, dto UpdateUserDTO) (*database.User, er
 }
 
 // DeleteUser удаляет пользователя
-func (s *UserService) DeleteUser(id uint) error {
+func (s *UserService) DeleteUser(id int64) error {
 	user, err := s.repository.GetUserByID(id)
 	if err != nil {
 		return ErrUserNotFound
@@ -179,7 +167,7 @@ func (s *UserService) DeleteUser(id uint) error {
 }
 
 // GetUserConfig возвращает конфигурацию для подключения пользователя
-func (s *UserService) GetUserConfig(id uint) (*UserConfigResponse, error) {
+func (s *UserService) GetUserConfig(id int64) (*UserConfigResponse, error) {
 	user, err := s.repository.GetUserByID(id)
 	if err != nil {
 		return nil, ErrUserNotFound
@@ -202,43 +190,28 @@ func (s *UserService) GetUserConfig(id uint) (*UserConfigResponse, error) {
 	}
 
 	response := &UserConfigResponse{
-		Username:     user.Username,
-		UUID:         user.UUID,
-		ServerIP:     s.serverIP,
-		ServerPort:   s.xrayConfig.Port,
-		JSON:         jsonConfig,
-		URI:          vlessURI,
-		QRCode:       qrCode,
-		ExpiresAt:    user.ExpiresAt.Format(time.RFC3339),
-		TrafficLimit: user.TrafficLimit,
-		TrafficUsed:  user.TrafficUsed,
-		IsActive:     user.IsActive,
+		Username:   user.Username,
+		UUID:       user.UUID,
+		ServerIP:   s.serverIP,
+		ServerPort: s.xrayConfig.Port,
+		JSON:       jsonConfig,
+		URI:        vlessURI,
+		QRCode:     qrCode,
+		IsActive:   user.IsActive,
 	}
 
 	return response, nil
-}
-
-// ResetUserTraffic сбрасывает счетчик трафика пользователя
-func (s *UserService) ResetUserTraffic(id uint) error {
-	if err := s.repository.ResetTraffic(id); err != nil {
-		return ErrUserNotFound
-	}
-	return nil
 }
 
 // GetStats возвращает статистику по пользователям
 func (s *UserService) GetStats() (map[string]interface{}, error) {
 	totalUsers, _ := s.repository.CountUsers()
 	activeUsers, _ := s.repository.CountActiveUsers()
-	expiredUsers, _ := s.repository.CountExpiredUsers()
-	overLimitUsers, _ := s.repository.CountUsersOverLimit()
 
 	stats := map[string]interface{}{
-		"total_users":      totalUsers,
-		"active_users":     activeUsers,
-		"expired_users":    expiredUsers,
-		"over_limit_users": overLimitUsers,
-		"xray_running":     s.xrayManager.IsRunning(),
+		"total_users":  totalUsers,
+		"active_users": activeUsers,
+		"xray_running": s.xrayManager.IsRunning(),
 	}
 
 	return stats, nil
