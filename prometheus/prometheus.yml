@@ -28,7 +28,7 @@ scrape_configs:
 
   # VPN Go Application metrics
   - job_name: 'vpn-app'
-    scrape_interval: 10s
+    scrape_interval: 30s
     static_configs:
       - targets: ['app:8080']
         labels:

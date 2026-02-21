@@ -3,6 +3,7 @@ package services
 import (
 	"errors"
 	"fmt"
+	"log"
 	"time"
 	"vpn-service/database"
 	"vpn-service/utils"
@@ -276,8 +277,8 @@ func (s *UserService) hotUpdateUserAccess(user *database.User, oldCanConnect boo
 }
 
 func (s *UserService) fallbackXraySync(action string, err error) {
-	fmt.Printf("Warning: failed to %s: %v\n", action, err)
+	log.Printf("Warning: failed to %s: %v", action, err)
 	if err := s.syncXrayUsers(); err != nil {
-		fmt.Printf("Warning: failed to sync Xray users: %v\n", err)
+		log.Printf("Warning: failed to sync Xray users: %v", err)
 	}
 }

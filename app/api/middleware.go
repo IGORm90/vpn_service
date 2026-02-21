@@ -9,14 +9,22 @@ import (
 	"vpn-service/responses"
 )
 
-// LoggingMiddleware логирует HTTP запросы
+// silentPaths содержит пути, которые не нужно логировать (технические эндпоинты с высокой частотой)
+var silentPaths = map[string]bool{
+	"/metrics": true,
+	"/health":  true,
+}
+
+// LoggingMiddleware логирует HTTP запросы (кроме технических эндпоинтов)
 func LoggingMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if silentPaths[r.URL.Path] {
+			next.ServeHTTP(w, r)
+			return
+		}
+
 		start := time.Now()
-
-		// Создаем ResponseWriter для перехвата статус кода
 		wrapped := &responseWriter{ResponseWriter: w, statusCode: http.StatusOK}
-
 		next.ServeHTTP(wrapped, r)
 
 		log.Printf("[%s] %s %s - %d (%v)",

@@ -38,10 +38,12 @@ ruler:
 
 limits_config:
   retention_period: 168h  # 7 days
-  ingestion_rate_mb: 4
-  ingestion_burst_size_mb: 6
+  ingestion_rate_mb: 8
+  ingestion_burst_size_mb: 16
   max_streams_per_user: 10000
   max_line_size: 256kb
+  max_outstanding_requests_per_tenant: 512
+  query_timeout: 60s
 
 compactor:
   working_directory: /loki/compactor

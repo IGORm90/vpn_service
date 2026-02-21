@@ -32,6 +32,9 @@ scrape_configs:
       - source_labels: ['__meta_docker_container_id']
         target_label: container_id
     pipeline_stages:
+      # Drop high-frequency technical endpoint logs (belt-and-suspenders)
+      - drop:
+          expression: '.*(GET|HEAD) /(metrics|health) '
       # Parse Go log format: 2024/01/28 12:00:00 Message
       - regex:
           expression: '^(?P<timestamp>\d{4}/\d{2}/\d{2} \d{2}:\d{2}:\d{2}) (?P<message>.*)$'
