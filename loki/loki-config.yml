@@ -42,8 +42,9 @@ limits_config:
   ingestion_burst_size_mb: 16
   max_streams_per_user: 10000
   max_line_size: 256kb
-  max_outstanding_requests_per_tenant: 512
-  query_timeout: 60s
+
+frontend:
+  max_outstanding_per_tenant: 512
 
 compactor:
   working_directory: /loki/compactor
