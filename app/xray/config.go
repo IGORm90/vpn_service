@@ -147,7 +147,7 @@ func generateInbounds(users []*database.User, cfg *Config) []map[string]interfac
 			clients = append(clients, map[string]interface{}{
 				"id":    user.UUID,
 				"email": user.Username,
-				"flow":  "",
+				"flow":  "xtls-rprx-vision",
 			})
 		}
 	}

@@ -33,9 +33,9 @@ func GenerateClientJSON(user *database.User, cfg *Config, serverIP string) (stri
 					"port":    cfg.Port,
 					"users": []map[string]interface{}{
 						{
-							"id":         user.UUID,
-							"encryption": "none",
-							"flow":       "",
+					"id":         user.UUID,
+						"encryption": "none",
+						"flow":       "xtls-rprx-vision",
 						},
 					},
 				},
@@ -76,6 +76,7 @@ func GenerateVlessURI(user *database.User, cfg *Config, serverIP string) (string
 	params.Set("fp", "chrome")
 	params.Set("sni", cfg.RealityServerNames[0])
 	params.Set("sid", cfg.RealityShortIds[1])
+	params.Set("flow", "xtls-rprx-vision")
 
 	uri := fmt.Sprintf("vless://%s@%s:%d?%s#%s",
 		user.UUID,
@@ -111,8 +112,8 @@ func GenerateClashConfig(user *database.User, cfg *Config, serverIP string) (str
 				"network": "tcp",
 				"tls":     true,
 				"udp":     true,
-				"flow":    "",
-				"reality-opts": map[string]interface{}{
+			"flow":    "xtls-rprx-vision",
+			"reality-opts": map[string]interface{}{
 					"public-key": cfg.RealityPublicKey,
 					"short-id":   cfg.RealityShortIds[1],
 				},

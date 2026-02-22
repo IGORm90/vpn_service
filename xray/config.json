@@ -37,13 +37,13 @@
           {
             "id": "b831381d-6324-4d53-ad4f-8cda48b30811",
             "email": "user@example.com",
-            "flow": ""
+            "flow": "xtls-rprx-vision"
           }
         ],
         "decryption": "none"
       },
       "streamSettings": {
-        "network": "xhttp",
+        "network": "tcp",
         "security": "reality",
         "realitySettings": {
           "show": false,
@@ -57,11 +57,6 @@
             "",
             "0123456789abcdef"
           ]
-        },
-        "xhttpSettings": {
-          "mode": "auto",
-          "path": "/xhttp",
-          "host": "eh.vk.com"
         }
       },
       "sniffing": {
