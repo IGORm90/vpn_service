@@ -37,7 +37,7 @@ func DefaultConfig() *Config {
 		RealityServerNames: []string{"eh.vk.com"},
 		RealityShortIds:    []string{"", "0123456789abcdef"},
 		XHTTPPath:          "/xhttp",
-		LogLevel:           "info",
+		LogLevel:           "warning",
 		AccessLogPath:      "/var/log/xray/access.log",
 		ErrorLogPath:       "stderr",
 		StatsPort:          10085,

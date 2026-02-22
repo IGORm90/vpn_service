@@ -62,7 +62,7 @@ func main() {
 		RealityServerNames: []string{getEnv("XRAY_REALITY_SNI", "eh.vk.com")},
 		RealityShortIds:    []string{"", "0123456789abcdef"},
 		XHTTPPath:          getEnv("XRAY_XHTTP_PATH", "/xhttp"),
-		LogLevel:           getEnv("XRAY_LOG_LEVEL", "info"),
+		LogLevel:           getEnv("XRAY_LOG_LEVEL", "warning"),
 		AccessLogPath:      logPath,
 		ErrorLogPath:       getEnv("XRAY_ERROR_LOG", "stderr"),
 		StatsPort:          10085,
