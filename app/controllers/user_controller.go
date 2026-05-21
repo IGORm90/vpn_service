@@ -2,6 +2,7 @@ package controllers
 
 import (
 	"encoding/json"
+	"log"
 	"net/http"
 	"strconv"
 	"vpn-service/responses"
@@ -52,6 +53,7 @@ func (c *UserController) CreateUser(w http.ResponseWriter, r *http.Request) {
 		case services.ErrInvalidUsername:
 			responses.SendBadRequest(w, "Username is required")
 		default:
+			log.Printf("[ERROR] CreateUser failed: %v", err)
 			responses.SendInternalError(w, "Failed to create user")
 		}
 		return
@@ -67,6 +69,7 @@ func (c *UserController) ListUsers(w http.ResponseWriter, r *http.Request) {
 
 	users, err := c.userService.ListUsers(activeOnly)
 	if err != nil {
+		log.Printf("[ERROR] ListUsers failed: %v", err)
 		responses.SendInternalError(w, "Failed to list users")
 		return
 	}
@@ -90,6 +93,7 @@ func (c *UserController) GetUser(w http.ResponseWriter, r *http.Request) {
 		if err == services.ErrUserNotFound {
 			responses.SendNotFound(w, "User not found")
 		} else {
+			log.Printf("[ERROR] GetUser failed for user %d: %v", id, err)
 			responses.SendInternalError(w, "Failed to get user")
 		}
 		return
@@ -125,6 +129,7 @@ func (c *UserController) UpdateUser(w http.ResponseWriter, r *http.Request) {
 		case services.ErrUserNotFound:
 			responses.SendNotFound(w, "User not found")
 		default:
+			log.Printf("[ERROR] UpdateUser failed for user %d: %v", id, err)
 			responses.SendInternalError(w, "Failed to update user")
 		}
 		return
@@ -148,6 +153,7 @@ func (c *UserController) DeleteUser(w http.ResponseWriter, r *http.Request) {
 		if err == services.ErrUserNotFound {
 			responses.SendNotFound(w, "User not found")
 		} else {
+			log.Printf("[ERROR] DeleteUser failed for user %d: %v", id, err)
 			responses.SendInternalError(w, "Failed to delete user")
 		}
 		return
@@ -174,6 +180,7 @@ func (c *UserController) GetUserConfig(w http.ResponseWriter, r *http.Request) {
 		if err == services.ErrUserNotFound {
 			responses.SendNotFound(w, "User not found")
 		} else {
+			log.Printf("[ERROR] GetUserConfig failed for user %d: %v", id, err)
 			responses.SendInternalError(w, "Failed to generate user config")
 		}
 		return
