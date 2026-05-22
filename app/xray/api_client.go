@@ -101,7 +101,7 @@ func buildVlessProtocolUser(user *database.User) (*protocol.User, error) {
 
 	account := &vless.Account{
 		Id:   parsedUUID.String(),
-		Flow: "",
+		Flow: "xtls-rprx-vision",
 	}
 
 	return &protocol.User{
